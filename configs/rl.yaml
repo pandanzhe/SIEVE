@@ -1,0 +1,19 @@
+base: toy.yaml
+rl:
+  algorithm: constrained_grpo
+  iterations: 18
+  groups_per_iteration: 6
+  group_size: 4
+  learning_rate: 0.025
+  clip_ratio: 0.20
+  kl_coefficient: 0.02
+  gamma: 0.97
+  multiplier_learning_rate: 0.08
+  constraints:
+    false_update: 0.08
+    unsafe_action: 0.03
+    verification: 0.45
+    stall: 0.20
+    invalid_patch: 0.02
+    collateral_edit: 0.00
+    budget_violation: 0.00

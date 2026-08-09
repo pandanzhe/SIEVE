@@ -1,0 +1,155 @@
+{
+    "schema_version":  1,
+    "purpose":  "Minimal upstream files consumed by SIEVE source normalization",
+    "file_count":  24,
+    "sources":  [
+                    {
+                        "dataset":  "tau2-bench",
+                        "version":  "1d244f5dca42944b67a379b44bfeb9f5748f189d",
+                        "license":  "MIT",
+                        "files":  [
+                                      {
+                                          "path":  "tau2-bench/LICENSE",
+                                          "bytes":  1093,
+                                          "sha256":  "74741b87a33d4704c6f33e5c71742542446c984233f7a7e4905bf36f4da5a33b"
+                                      },
+                                      {
+                                          "path":  "tau2-bench/data/tau2/domains/retail/tasks.json",
+                                          "bytes":  355019,
+                                          "sha256":  "f44563d8f36362e2dc58282bb02cfb85010d22f27d9439808758d3e9b2bc16d2"
+                                      },
+                                      {
+                                          "path":  "tau2-bench/data/tau2/domains/airline/tasks.json",
+                                          "bytes":  159049,
+                                          "sha256":  "34dfcf0622792d0d0fa32aa491d21582e1b5d3ec1948e7743bae881885f878ea"
+                                      },
+                                      {
+                                          "path":  "tau2-bench/data/tau2/domains/telecom/tasks.json",
+                                          "bytes":  14340799,
+                                          "sha256":  "20793073500dba5761f76d038dd32a343903985af442b3eae7eeb3a4e0d5d75d"
+                                      }
+                                  ]
+                    },
+                    {
+                        "dataset":  "ToolBench",
+                        "version":  "d56fdd89faf8c91fa135090b212bb9057ee5cfc2",
+                        "license":  "Apache-2.0",
+                        "files":  [
+                                      {
+                                          "path":  "ToolBench/LICENSE",
+                                          "bytes":  11558,
+                                          "sha256":  "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G1_answer/10_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  22570,
+                                          "sha256":  "76a77721640045e07142c669008611e6b82b25007c73427aec771adbf9dd9841"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G1_answer/11_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  35919,
+                                          "sha256":  "3f935fe99b99beccb727763e8407ab9fdb5f2cf45d85d998327b669ab2ea52ab"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G1_answer/57_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  70030,
+                                          "sha256":  "8279c9999dad881db8bc9e112feeb51ca2861e89d835111408f218af297af531"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G1_answer/59_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  40656,
+                                          "sha256":  "8fea509e1be896331fdfd587ab4668281ee820f89cdb9a1760c218ed7804c2be"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G1_answer/69_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  62884,
+                                          "sha256":  "4c3baf49df02b567b7fbc09f4e1b8238dfc7a0cc3ba3ed6110eb38ea0ed9ccd0"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G2_answer/102_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  40524,
+                                          "sha256":  "33489d675e5e0b1ca8a9ec2ad8caa33731e2cea84833bc2f2c00b6e55efc62ef"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G2_answer/10_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  99823,
+                                          "sha256":  "b688cf62b61c4e102e296d718ac6bae8cc07b60183bc13d7fcf60898d3b58409"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G2_answer/119_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  77794,
+                                          "sha256":  "1d448c70e8d920b76fb0faafb46d4dad525306702c4562d25e65e49244abbe33"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G2_answer/127_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  28161,
+                                          "sha256":  "4b005d973d7e0984507767e286742718671795c2ec396d9b70d9ec882591019a"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G2_answer/52_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  109190,
+                                          "sha256":  "3e56abd934aec0cef5b9280c52b0d0b96ae1249f0ee5379879e55c213959e27f"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G3_answer/13_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  294431,
+                                          "sha256":  "1b779bd435c017fe9e3505c49f38b3fc360f1fce24611efa4c2cab0cbfcc4c70"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G3_answer/15_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  195986,
+                                          "sha256":  "a57d7dd83a25c6f5d222119ede621f44c5387cf0bd8d3f252242d4f052d8b202"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G3_answer/21_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  33913,
+                                          "sha256":  "8352e0195556ebb58d4d121866ef4dea765525428578ec0c8bde1db563a1345f"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G3_answer/3_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  162028,
+                                          "sha256":  "fd57136ae0a5dc3c3481ab7612124dc5fe96e1d9a8a583c86bba1448d46253a2"
+                                      },
+                                      {
+                                          "path":  "ToolBench/data_example/answer/G3_answer/8_ChatGPT_DFS_woFilter_w2.json",
+                                          "bytes":  133402,
+                                          "sha256":  "e379c1196c98aeb79a8077fc200b6f23fdeec41cf09833f6ba0ce6a0eeeb66f2"
+                                      }
+                                  ]
+                    },
+                    {
+                        "dataset":  "AgentBench",
+                        "version":  "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+                        "license":  "Apache-2.0",
+                        "files":  [
+                                      {
+                                          "path":  "AgentBench/LICENSE",
+                                          "bytes":  11558,
+                                          "sha256":  "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+                                      },
+                                      {
+                                          "path":  "AgentBench/data/dbbench/standard.jsonl",
+                                          "bytes":  910656,
+                                          "sha256":  "8998c0f076da56c9880198c8dd7dbec13d85be4331ebe393c9b79caaf9560830"
+                                      }
+                                  ]
+                    },
+                    {
+                        "dataset":  "webarena",
+                        "version":  "dce04686a56253aefba7b18a4fa0937cf1dc987b",
+                        "license":  "Apache-2.0",
+                        "files":  [
+                                      {
+                                          "path":  "webarena/LICENSE",
+                                          "bytes":  11558,
+                                          "sha256":  "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+                                      },
+                                      {
+                                          "path":  "webarena/config_files/test.raw.json",
+                                          "bytes":  910380,
+                                          "sha256":  "9bf09641c9637e0f34e2932158f0b5a7f45263e8ce3c4293ea38d1de45773659"
+                                      }
+                                  ]
+                    }
+                ]
+}

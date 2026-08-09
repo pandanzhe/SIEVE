@@ -1,0 +1,33 @@
+{
+  "quality_report": {
+    "path": "quality_report.json",
+    "sha256": "5465ce43685c84555e6d64f4899485f1529630d013bebcf970d13f9532fe4b0b"
+  },
+  "schema_version": 2,
+  "source": {
+    "path": "source/records.jsonl",
+    "records": 6000,
+    "sha256": "521d99a83f8df420397c0b527039695ec18a3d7021c4cd850e7c5e961b278b61"
+  },
+  "split_policy": "sha256(seed:group_id), source export 80/10/10",
+  "system_prompt": {
+    "position": "first chat message with role=system; context is role=user",
+    "sha256": "8e5ce5aede9c236c147d1503a789d572b454bbe1651fbe0dc5a7412a95fb2f97",
+    "text": "You are the observation evaluation policy of a multi-step agent.\n\nGiven the current executable belief state, task goal, new observation, risk constraints,\nevidence ledger, and remaining budget, produce exactly one structured cognitive action.\n\nDecision definitions:\n- UPDATE: the observation applies to the current task and has sufficient support to modify the executable belief state.\n- HOLD: the observation may affect the current task, but current evidence is insufficient for safe commitment.\n- IGNORE: the observation has no admissible effect on the current task state and does not require verification.\n\nConstraints:\n1. UPDATE must contain local executable patches.\n2. HOLD must preserve the current executable value. It may mark an affected field as pending and request verification.\n3. IGNORE must contain no affected fields, patches, or verification request.\n4. Do not modify fields outside affected_fields.\n5. Return valid JSON only, without explanations.",
+    "version": "stage1-system-v2"
+  },
+  "test_policy": "Internal test export is not published or consumed by Stage-1; final testing uses external official benchmarks.",
+  "train": {
+    "path": "clean/train.jsonl",
+    "records": 4789,
+    "scenario_groups": 4076,
+    "sha256": "8519293cdcd953462e4f44b1257bb7c11723d6eceee30bafcade548a66ccc530"
+  },
+  "training_format": "single-step SFT; fixed system prompt + context JSON + target JSON + native EOS",
+  "validation": {
+    "path": "clean/dev.jsonl",
+    "records": 619,
+    "scenario_groups": 521,
+    "sha256": "e2b0a0c2fada682531bef174749fa903c3c58c2f4802a32bb3c6d055b4b6e586"
+  }
+}

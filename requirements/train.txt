@@ -1,0 +1,8 @@
+﻿--extra-index-url https://download.pytorch.org/whl/cu126
+torch==2.7.1
+transformers==4.53.2
+peft==0.16.0
+accelerate==1.8.1
+safetensors==0.5.3
+numpy==2.2.6
+PyYAML==6.0.2

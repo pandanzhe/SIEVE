@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="980" viewBox="0 0 1800 980">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#26364a"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d4bc3"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#182433" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .title { font: 700 34px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #172033; }
+      .subtitle { font: 400 21px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #536174; }
+      .box-title { font: 700 25px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #172033; }
+      .box-text { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #344255; }
+      .small { font: 400 16px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #536174; }
+      .math { font: italic 24px Cambria, serif; fill: #172033; }
+      .label { font: 600 18px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #344255; }
+      .state { fill: #eef8ee; stroke: #4b8a4d; stroke-width: 2.5; }
+      .input { fill: #eef5ff; stroke: #3d6fab; stroke-width: 2.5; }
+      .policy { fill: #f5efff; stroke: #7651bd; stroke-width: 2.5; }
+      .exec { fill: #fff3e8; stroke: #c66b1f; stroke-width: 2.5; }
+      .action { fill: #fff8dc; stroke: #b68b12; stroke-width: 2.5; }
+      .env { fill: #f2f3f5; stroke: #6a7280; stroke-width: 2.5; }
+      .note { fill: #ffffff; stroke: #b7c0cc; stroke-width: 1.8; }
+      .flow { fill: none; stroke: #26364a; stroke-width: 3; marker-end: url(#arrow); }
+      .guide { fill: none; stroke: #6d4bc3; stroke-width: 3; stroke-dasharray: 10 8; marker-end: url(#arrow-purple); }
+    </style>
+  </defs>
+
+  <rect width="1800" height="980" fill="#fbfcfe"/>
+  <text x="900" y="58" text-anchor="middle" class="title">SIEVE 运行时数据流：可信状态在上，处理模块在中</text>
+  <text x="900" y="94" text-anchor="middle" class="subtitle">一条原子观察如何从旧信念进入裁决、执行、行动与下一环境反馈</text>
+
+  <!-- state rail -->
+  <rect x="280" y="130" width="470" height="155" rx="22" class="state" filter="url(#shadow)"/>
+  <text x="515" y="170" text-anchor="middle" class="box-title">上一可信状态</text>
+  <text x="515" y="207" text-anchor="middle" class="math">B<tspan baseline-shift="sub" font-size="16">t−1</tspan></text>
+  <text x="515" y="242" text-anchor="middle" class="small">固定 slot 上限；只含已准入事实</text>
+
+  <rect x="1040" y="130" width="470" height="155" rx="22" class="state" filter="url(#shadow)"/>
+  <text x="1275" y="170" text-anchor="middle" class="box-title">更新后的可信状态</text>
+  <text x="1275" y="207" text-anchor="middle" class="math">B<tspan baseline-shift="sub" font-size="16">t</tspan></text>
+  <text x="1275" y="242" text-anchor="middle" class="small">仅合法局部 patch 生效；其余字段不变</text>
+
+  <path d="M 750 207 L 1040 207" class="flow"/>
+  <text x="895" y="188" text-anchor="middle" class="label">确定性状态转移 U</text>
+  <path d="M 515 285 L 515 395" class="flow"/>
+  <path d="M 915 395 L 915 330 L 1040 285" class="flow"/>
+  <path d="M 1250 285 L 1250 395" class="flow"/>
+
+  <!-- module chain -->
+  <rect x="70" y="395" width="265" height="250" rx="22" class="input" filter="url(#shadow)"/>
+  <text x="202" y="437" text-anchor="middle" class="box-title">新观察与上下文</text>
+  <text x="202" y="476" text-anchor="middle" class="math">o<tspan baseline-shift="sub" font-size="16">t</tspan>, m<tspan baseline-shift="sub" font-size="16">t</tspan></text>
+  <text x="100" y="520" class="box-text">• 来源 / 时间</text>
+  <text x="100" y="553" class="box-text">• 实体 / 条件</text>
+  <text x="100" y="586" class="box-text">• 目标 / 风险</text>
+  <text x="100" y="619" class="box-text">• 预算 / ledger</text>
+
+  <rect x="385" y="395" width="330" height="250" rx="22" class="policy" filter="url(#shadow)"/>
+  <text x="550" y="437" text-anchor="middle" class="box-title">观察裁决策略</text>
+  <text x="550" y="474" text-anchor="middle" class="math">π<tspan baseline-shift="sub" font-size="16">rev</tspan></text>
+  <text x="420" y="516" class="box-text">1. UPDATE / HOLD / IGNORE</text>
+  <text x="420" y="550" class="box-text">2. 受影响字段 A<tspan baseline-shift="sub" font-size="13">t</tspan></text>
+  <text x="420" y="584" class="box-text">3. typed patch ΔB<tspan baseline-shift="sub" font-size="13">t</tspan></text>
+  <text x="420" y="618" class="box-text">4. 验证请求 q<tspan baseline-shift="sub" font-size="13">t</tspan></text>
+
+  <rect x="765" y="395" width="300" height="250" rx="22" class="exec" filter="url(#shadow)"/>
+  <text x="915" y="437" text-anchor="middle" class="box-title">信念执行器 U</text>
+  <text x="800" y="484" class="box-text">• schema / 类型校验</text>
+  <text x="800" y="521" class="box-text">• 字段局部性约束</text>
+  <text x="800" y="558" class="box-text">• 执行合法 patch</text>
+  <text x="800" y="595" class="box-text">• 更新预算与 ledger</text>
+  <text x="915" y="624" text-anchor="middle" class="small">不训练</text>
+
+  <rect x="1115" y="395" width="270" height="250" rx="22" class="action" filter="url(#shadow)"/>
+  <text x="1250" y="437" text-anchor="middle" class="box-title">行动策略</text>
+  <text x="1250" y="474" text-anchor="middle" class="math">π<tspan baseline-shift="sub" font-size="16">act</tspan></text>
+  <text x="1150" y="519" class="box-text">• 只读取 B<tspan baseline-shift="sub" font-size="13">t</tspan></text>
+  <text x="1150" y="556" class="box-text">• 生成环境动作 a<tspan baseline-shift="sub" font-size="13">k</tspan></text>
+  <text x="1150" y="593" class="box-text">• pending 高风险阻断</text>
+  <text x="1250" y="624" text-anchor="middle" class="small">主实验冻结</text>
+
+  <rect x="1435" y="395" width="295" height="250" rx="22" class="env" filter="url(#shadow)"/>
+  <text x="1582" y="437" text-anchor="middle" class="box-title">环境执行</text>
+  <text x="1582" y="474" text-anchor="middle" class="math">P<tspan baseline-shift="sub" font-size="16">env</tspan>, P<tspan baseline-shift="sub" font-size="16">obs</tspan></text>
+  <text x="1470" y="519" class="box-text">• 改变 world state x<tspan baseline-shift="sub" font-size="13">k+1</tspan></text>
+  <text x="1470" y="556" class="box-text">• 产生下一观察 o<tspan baseline-shift="sub" font-size="13">t+1</tspan></text>
+  <text x="1470" y="593" class="box-text">• 计算终局与外部成本</text>
+
+  <path d="M 335 520 L 385 520" class="flow"/>
+  <path d="M 715 520 L 765 520" class="flow"/>
+  <path d="M 1065 520 L 1115 520" class="flow"/>
+  <path d="M 1385 520 L 1435 520" class="flow"/>
+
+  <!-- verification branch -->
+  <path d="M 550 645 L 550 735 L 1582 735 L 1582 645" class="guide"/>
+  <text x="1055" y="716" text-anchor="middle" class="label">q<tspan baseline-shift="sub" font-size="13">t</tspan>：验证是有成本的环境动作，不是模型内部思考</text>
+
+  <!-- environment feedback -->
+  <path d="M 1582 645 L 1582 830 L 202 830 L 202 645" class="flow"/>
+  <text x="900" y="815" text-anchor="middle" class="label">环境返回下一条原子观察 o<tspan baseline-shift="sub" font-size="13">t+1</tspan>；进入下一修正事件</text>
+
+  <!-- notes -->
+  <rect x="150" y="875" width="1500" height="70" rx="18" class="note"/>
+  <text x="900" y="905" text-anchor="middle" class="label">关键隔离：未经准入的原始观察不能直接进入行动策略</text>
+  <text x="900" y="932" text-anchor="middle" class="small">t 每处理一条原子观察增加 1；k 每执行一次工具、验证或外部动作增加 1</text>
+</svg>

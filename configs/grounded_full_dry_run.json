@@ -1,0 +1,15 @@
+{
+    "source_manifest":  "tmp/data_factory/normalized-full/manifest.json",
+    "output_dir":  "tmp/data_factory/stage1-trajectory-v2",
+    "total":  6000,
+    "batch_size":  25,
+    "seed":  42,
+    "max_requests":  400,
+    "max_attempts":  4,
+    "glm_max_retries":  2,
+    "temperature":  0.6,
+    "max_tokens":  4096,
+    "prompt_version":  "stage1-system-v2",
+    "rule_version":  "trajectory-v2",
+    "trajectory_mode":  true
+}

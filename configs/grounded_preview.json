@@ -1,0 +1,14 @@
+{
+  "source_manifest": "tmp/data_factory/normalized-full/manifest.json",
+  "output_dir": "tmp/data_factory/preview-dry-run",
+  "total": 140,
+  "batch_size": 5,
+  "seed": 42,
+  "max_requests": 100,
+  "max_attempts": 3,
+  "glm_max_retries": 2,
+  "temperature": 0.6,
+  "max_tokens": 4096,
+  "prompt_version": "v1",
+  "rule_version": "v1"
+}

@@ -1,0 +1,15 @@
+seed: 17
+paths:
+  data_dir: outputs/toy/data
+  checkpoint_dir: outputs/toy/checkpoints
+  evaluation_dir: outputs/toy/evaluation
+data:
+  scenarios: 180
+  train_fraction: 0.70
+  dev_fraction: 0.15
+  max_slots: 4
+  ledger_capacity: 4
+policy:
+  feature_dim: 128
+  max_slots: 4
+  temperature: 1.0
