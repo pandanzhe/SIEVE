@@ -45,7 +45,9 @@ class StateExecutor:
                 if slot is not None:
                     slot.status = SlotStatus.PENDING
             if observation is not None:
-                next_ledger.append(observation, observation.perturbation)
+                # Never expose the generator-only perturbation label through the
+                # policy-visible evidence ledger.
+                next_ledger.append(observation, "held_for_verification")
             return ExecutorResult(next_state, next_ledger, True, costs)
 
         for patch in output.patches:

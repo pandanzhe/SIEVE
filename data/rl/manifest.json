@@ -1,0 +1,22 @@
+{
+  "macro_domain_targets": {
+    "commerce": 0.5,
+    "service": 0.3,
+    "workflow": 0.2
+  },
+  "schema_version": "sieve.rl.scenario.v1",
+  "seed": 42,
+  "source_file": "records.jsonl",
+  "source_sha256": "521d99a83f8df420397c0b527039695ec18a3d7021c4cd850e7c5e961b278b61",
+  "split_counts": {
+    "dev": 200,
+    "test": 300,
+    "train": 1600
+  },
+  "split_policy": "sha256(seed:base_task_id), 75/10/15 before augmentation",
+  "split_sha256": {
+    "dev": "337b6d2ffb297002afc2c7b20eacac1244f95fce26845e06bbc2f729064c4300",
+    "test": "e6381ccc160b8ee5c71593cfcbee3ff73e60e3d9d7f92b3772ab826fe691e68c",
+    "train": "fa2dc15817e8dcb0df6f0e1b43b7ab05dc6f23af90b95239620416b9fc383074"
+  }
+}

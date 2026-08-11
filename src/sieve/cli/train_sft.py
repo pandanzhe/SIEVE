@@ -50,7 +50,7 @@ def _train_numpy(config: dict, root: Path, validate_only: bool) -> dict[str, obj
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train the Stage-1 SIEVE policy with SFT")
-    parser.add_argument("--config", default="configs/sft_qwen3_4b.yaml")
+    parser.add_argument("--config", default="configs/sft_qwen25_3b.yaml")
     parser.add_argument("--root", default=".")
     parser.add_argument("--num-processes", type=int)
     parser.add_argument(

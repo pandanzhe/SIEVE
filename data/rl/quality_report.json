@@ -1,0 +1,55 @@
+{
+  "base_task_overlap": {
+    "dev_test": 0,
+    "train_dev": 0,
+    "train_test": 0
+  },
+  "derived_secondary_scenarios": 2100,
+  "distractor_split_violations": 0,
+  "eligible_source_rows": 4200,
+  "event_kind_counts": {
+    "dev": {
+      "ambiguous": 200,
+      "authoritative": 200,
+      "stale_conflict": 200,
+      "wrong_entity": 200
+    },
+    "test": {
+      "ambiguous": 300,
+      "authoritative": 300,
+      "stale_conflict": 300,
+      "wrong_entity": 300
+    },
+    "train": {
+      "ambiguous": 1600,
+      "authoritative": 1600,
+      "stale_conflict": 1600,
+      "wrong_entity": 1600
+    }
+  },
+  "macro_domain_counts": {
+    "dev": {
+      "commerce": 100,
+      "service": 60,
+      "workflow": 40
+    },
+    "test": {
+      "commerce": 150,
+      "service": 90,
+      "workflow": 60
+    },
+    "train": {
+      "commerce": 800,
+      "service": 480,
+      "workflow": 320
+    }
+  },
+  "multi_field_base_tasks": 0,
+  "schema_version": "sieve.rl.scenario.v1",
+  "split_base_tasks": {
+    "dev": 118,
+    "test": 156,
+    "train": 822
+  },
+  "unique_base_tasks": 1460
+}

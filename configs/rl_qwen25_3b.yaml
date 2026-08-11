@@ -1,0 +1,66 @@
+backend: hf_constrained_grpo
+seed: 42
+expected_split_counts:
+  train: 1600
+  dev: 200
+  test: 300
+
+paths:
+  stage1_dev_file: data/sft/clean/dev.jsonl
+  readiness_report: outputs/stage1-qwen25-3b/readiness.json
+  train_file: data/rl/scenarios/train.jsonl
+  dev_file: data/rl/scenarios/dev.jsonl
+  test_file: data/rl/scenarios/test.jsonl
+  model_path: model
+  sft_checkpoint: outputs/stage1-qwen25-3b/best
+  output_dir: outputs/stage2-qwen25-3b
+
+model:
+  dtype: bfloat16
+  enable_thinking: false
+  max_prompt_length: 1536
+  max_completion_length: 384
+  gradient_checkpointing: true
+  attention_implementation: sdpa
+
+rollout:
+  # Per process. With two GPUs each iteration samples 4 groups / 16 trajectories.
+  group_size: 4
+  groups_per_iteration: 2
+  max_episode_steps: 8
+  # Keep sampling on-policy: the PPO ratio uses the same unwarped distribution.
+  temperature: 1.0
+  top_p: 1.0
+
+train:
+  iterations: 200
+  update_epochs: 1
+  micro_batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 0.000005
+  weight_decay: 0.0
+  warmup_ratio: 0.03
+  clip_ratio: 0.20
+  kl_coefficient: 0.02
+  gamma: 0.97
+  multiplier_learning_rate: 0.08
+  max_grad_norm: 1.0
+  eval_steps: 20
+  save_steps: 20
+  # Accelerate state checkpoints may include the full PEFT-wrapped base model.
+  save_total_limit: 2
+  resume_from:
+
+hardware:
+  # Default server profile: 2 x A100 40G. Override with SIEVE_NUM_GPUS=1.
+  num_processes: 2
+
+constraints:
+  false_update: 0.03
+  unsafe_action: 0.01
+  verification: 1.00
+  stall: 0.10
+  invalid_format: 0.02
+  invalid_patch: 0.01
+  collateral_edit: 0.00
+  budget_violation: 0.00

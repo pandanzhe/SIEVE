@@ -1,0 +1,49 @@
+backend: hf
+seed: 42
+
+paths:
+  source_file: data/sft/source/records.jsonl
+  train_file: data/sft/clean/train.jsonl
+  dev_file: data/sft/clean/dev.jsonl
+  output_dir: outputs/stage1-qwen25-3b
+
+model:
+  path: model
+  dtype: bfloat16
+  enable_thinking: false
+  max_slots: 16
+  max_length: 2048
+  max_completion_length: 512
+  gradient_checkpointing: true
+  attention_implementation: sdpa
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+loss_weights:
+  decision: 1.0
+  affected: 1.0
+  verification: 1.0
+  patch_operation: 1.0
+  patch_value: 1.0
+
+train:
+  epochs: 3
+  micro_batch_size: 2
+  effective_batch_size: 32
+  learning_rate_lora: 0.0001
+  learning_rate_heads: 0.0005
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  max_grad_norm: 1.0
+  num_workers: 2
+  eval_steps: 100
+  save_total_limit: 3
+  resume_from:
+
+hardware:
+  num_processes: 1
+  mixed_precision: bf16

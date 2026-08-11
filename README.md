@@ -160,9 +160,9 @@ python -m sieve.cli.generate_grounded --root . \
 
 相同输出目录默认启用 resume 和响应缓存。若环境变量不存在，真实生成会明确停止；确定性生产不受影响。训练视图会删除 provenance、oracle、generation、validation、reason code 和扰动标签，并把自然语言 realization 作为当前观察值。
 
-## Stage-1 Qwen3-4B structured SFT
+## Stage-1 Qwen2.5-3B structured SFT
 
-Stage 1 defaults to one A100 40G and loads Qwen3-4B only from the repository-local `model/` directory. Copy the server model assets into that placeholder, then run:
+Stage 1 defaults to one A100 40G and loads Qwen2.5-3B only from the repository-local `model/` directory. Copy the server model assets into that placeholder, then run:
 
 ```bash
 bash scripts/create_train_env.sh
@@ -170,4 +170,18 @@ bash scripts/validate_sft.sh
 bash scripts/run_sft.sh
 ```
 
-Use `SIEVE_NUM_GPUS=2 bash scripts/run_sft.sh` for the optional two-GPU DDP profile. The canonical data files are `data/sft/source/records.jsonl`, `data/sft/clean/train.jsonl`, and `data/sft/clean/dev.jsonl`; Stage 1 has no internal test input. See `docs/stage1_sft_experiment_plan.md` for objectives, metrics, checkpoints, versions, and the server smoke-run checklist.
+Use `SIEVE_NUM_GPUS=2 bash scripts/run_sft.sh` for the optional two-GPU DDP profile. The canonical data files are `data/sft/source/records.jsonl`, `data/sft/clean/train.jsonl`, and `data/sft/clean/dev.jsonl`; Stage 1 has no internal test input. See `docs/stage1_sft_experiment_plan.md` for Stage 1 and `docs/stage2_rl_experiment_plan.md` for the Qwen2.5-3B constrained multi-step GRPO pipeline.
+
+## Stage-2 Qwen2.5-3B constrained GRPO
+
+Stage 2 uses the Stage-1 `best/adapter` as both the initial policy and the frozen reference. The committed scenario corpus contains 1,600 train, 200 dev, and 300 internal-test episodes. On the server, run in this order:
+
+```bash
+python -m pip install -r requirements/rl.txt
+python -m pip install -e .
+bash scripts/check_stage1_readiness.sh
+bash scripts/validate_stage2.sh
+bash scripts/train_stage2.sh
+```
+
+The default profile is two A100 40G GPUs. Use `SIEVE_NUM_GPUS=1 bash scripts/train_stage2.sh` for the one-GPU fallback. Neither local validation nor corpus construction loads Qwen or starts training; the GPU readiness and training commands intentionally fail until `model/`, the Stage-1 adapter, pinned dependencies, and the generated readiness report are present.

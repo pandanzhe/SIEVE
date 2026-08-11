@@ -58,6 +58,18 @@ class PortabilityTests(unittest.TestCase):
             if script.name != "common.sh":
                 self.assertIn("common.sh", script.read_text(encoding="utf-8"))
 
+    def test_stage2_scripts_use_relative_config_and_accelerate_launch(self) -> None:
+        build = (ROOT / "scripts" / "build_stage2_data.sh").read_text(encoding="utf-8")
+        validate = (ROOT / "scripts" / "validate_stage2.sh").read_text(encoding="utf-8")
+        train = (ROOT / "scripts" / "train_stage2.sh").read_text(encoding="utf-8")
+        for script in (build, validate, train):
+            self.assertIn("common.sh", script)
+            self.assertNotRegex(script, r"[A-Za-z]:[\\/]")
+        self.assertIn("build_rl_data", build)
+        self.assertIn("--validate-only", validate)
+        self.assertIn("accelerate.commands.launch", train)
+        self.assertIn("SIEVE_NUM_GPUS", train)
+
 
 if __name__ == "__main__":
     unittest.main()

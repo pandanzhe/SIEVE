@@ -40,6 +40,7 @@ def zero_costs() -> dict[str, float]:
         "unsafe_action": 0.0,
         "verification": 0.0,
         "stall": 0.0,
+        "invalid_format": 0.0,
         "invalid_patch": 0.0,
         "collateral_edit": 0.0,
         "budget_violation": 0.0,
