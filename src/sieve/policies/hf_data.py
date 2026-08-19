@@ -243,6 +243,9 @@ def _compute_token_span_labels(
             value_labels.append(-100)
 
     return structure_labels, value_labels
+
+
+class HFRevisionCollator:
     """Build causal-LM and gated structured labels with lazy torch imports."""
 
     def __init__(
