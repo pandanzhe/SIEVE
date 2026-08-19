@@ -17,11 +17,6 @@ model/*
 .vscode/
 .idea/
 
-# Large training data JSONL (regenerate with scripts/build_sft_v3.py)
-data/sft/clean/*.jsonl
-data/sft/source/records.jsonl
-data/rl/scenarios/*.jsonl
-
 # Raw benchmark repos (download separately)
 data/raw/tau2-bench/
 data/raw/car-bench/
