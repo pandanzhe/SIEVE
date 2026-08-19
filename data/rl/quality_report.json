@@ -6,7 +6,7 @@
   },
   "derived_secondary_scenarios": 2100,
   "distractor_split_violations": 0,
-  "eligible_source_rows": 4200,
+  "eligible_source_rows": 2700,
   "event_kind_counts": {
     "dev": {
       "ambiguous": 200,
@@ -47,9 +47,9 @@
   "multi_field_base_tasks": 0,
   "schema_version": "sieve.rl.scenario.v1",
   "split_base_tasks": {
-    "dev": 118,
-    "test": 156,
-    "train": 822
+    "dev": 27,
+    "test": 33,
+    "train": 152
   },
-  "unique_base_tasks": 1460
+  "unique_base_tasks": 212
 }

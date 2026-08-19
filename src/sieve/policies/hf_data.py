@@ -116,7 +116,133 @@ def render_revision_prompt(
     )
 
 
-class HFRevisionCollator:
+def _identify_value_byte_spans(completion_text: str) -> list[tuple[int, int]]:
+    """Return (start, end) byte offsets of patch value content in the JSON.
+
+    Scans for ``"value":`` keys inside the ``"patches"`` array and marks the
+    byte range of the value content (string, number, null, bool, array, object).
+    """
+    import re as _re
+
+    spans: list[tuple[int, int]] = []
+    encoded = completion_text.encode("utf-8")
+
+    # Find "patches" array start
+    patches_match = _re.search(r'"patches"\s*:\s*\[', completion_text)
+    if not patches_match:
+        return spans
+    patches_start = patches_match.end()
+
+    # Within patches, find each "value": occurrence
+    pos = patches_start
+    while pos < len(completion_text):
+        value_match = _re.search(r'"value"\s*:\s*', completion_text[pos:])
+        if not value_match:
+            break
+        value_content_start = pos + value_match.end()
+
+        # Determine the extent of the value (string, number, null, bool, object, array)
+        ch = completion_text[value_content_start : value_content_start + 1]
+        if ch == '"':
+            # String: find closing quote (handle escapes)
+            end = value_content_start + 1
+            while end < len(completion_text):
+                if completion_text[end] == "\\" and end + 1 < len(completion_text):
+                    end += 2
+                    continue
+                if completion_text[end] == '"':
+                    end += 1
+                    break
+                end += 1
+            # UTF-8 byte spans for the string content (inside quotes)
+            byte_start = len(completion_text[:value_content_start + 1].encode("utf-8"))
+            byte_end = len(completion_text[:end - 1].encode("utf-8"))
+            spans.append((byte_start, byte_end))
+            pos = end
+        elif ch in ("n", "t", "f"):
+            # null, true, false
+            for keyword in ("null", "true", "false"):
+                if completion_text[value_content_start:].startswith(keyword):
+                    byte_start = len(completion_text[:value_content_start].encode("utf-8"))
+                    byte_end = len(completion_text[:value_content_start + len(keyword)].encode("utf-8"))
+                    spans.append((byte_start, byte_end))
+                    pos = value_content_start + len(keyword)
+                    break
+            else:
+                pos = value_content_start + 1
+        elif ch in ("-", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
+            # Number
+            num_match = _re.match(r'[-\d.eE+]+', completion_text[value_content_start:])
+            if num_match:
+                end = value_content_start + num_match.end()
+                byte_start = len(completion_text[:value_content_start].encode("utf-8"))
+                byte_end = len(completion_text[:end].encode("utf-8"))
+                spans.append((byte_start, byte_end))
+                pos = end
+            else:
+                pos = value_content_start + 1
+        else:
+            pos = value_content_start + 1
+
+    return spans
+
+
+def _byte_offset_to_token_index(
+    token_offsets: list[int], byte_offset: int
+) -> int:
+    """Map a byte offset to the token index that contains it."""
+    for idx, offset in enumerate(token_offsets):
+        if offset <= byte_offset < (token_offsets[idx + 1] if idx + 1 < len(token_offsets) else offset + 1):
+            return idx
+    return -1
+
+
+def _compute_token_span_labels(
+    completion_ids: list[int],
+    completion_text: str,
+    tokenizer: Any,
+) -> tuple[list[int], list[int]]:
+    """Return (structure_labels, value_labels) for a single completion.
+
+    Both lists have the same length as completion_ids. Structure tokens get
+    their actual ID; value tokens get their actual ID. All other positions
+    are -100 (ignored in loss). Together structure ∪ value = all tokens.
+    """
+    value_spans = _identify_value_byte_spans(completion_text)
+
+    # Compute byte offset of each token
+    token_offsets: list[int] = []
+    byte_pos = 0
+    for token_id in completion_ids:
+        token_offsets.append(byte_pos)
+        try:
+            token_str = tokenizer.decode([token_id], add_special_tokens=False)
+        except Exception:
+            token_str = ""
+        byte_pos += len(token_str.encode("utf-8"))
+
+    # Determine which tokens are "value" tokens
+    n = len(completion_ids)
+    is_value = [False] * n
+    for span_start, span_end in value_spans:
+        for idx in range(n):
+            tok_start = token_offsets[idx]
+            tok_end = token_offsets[idx + 1] if idx + 1 < n else tok_start + 1
+            # Token overlaps with value span
+            if tok_start < span_end and tok_end > span_start:
+                is_value[idx] = True
+
+    structure_labels = []
+    value_labels = []
+    for idx, token_id in enumerate(completion_ids):
+        if is_value[idx]:
+            structure_labels.append(-100)
+            value_labels.append(token_id)
+        else:
+            structure_labels.append(token_id)
+            value_labels.append(-100)
+
+    return structure_labels, value_labels
     """Build causal-LM and gated structured labels with lazy torch imports."""
 
     def __init__(
@@ -171,6 +297,8 @@ class HFRevisionCollator:
         label_rows: list[list[int]] = []
         prompt_last_indices: list[int] = []
         plans: list[StructuredLabelPlan] = []
+        structure_label_rows: list[list[int]] = []
+        value_label_rows: list[list[int]] = []
         for record in records:
             prompt = render_revision_prompt(
                 self.tokenizer,
@@ -192,8 +320,18 @@ class HFRevisionCollator:
             )["input_ids"]
             if not prompt_ids:
                 raise ValueError("tokenized revision prompt must not be empty")
+
+            # Compute token-span labels for structure/value objectives
+            completion_text = self._target_json(record)
+            struct_labels, val_labels = _compute_token_span_labels(
+                completion_ids, completion_text, self.tokenizer
+            )
+
             input_rows.append(prompt_ids + completion_ids)
             label_rows.append([-100] * len(prompt_ids) + completion_ids)
+            # Prompt tokens are -100 in structure/value labels too
+            structure_label_rows.append([-100] * len(prompt_ids) + struct_labels)
+            value_label_rows.append([-100] * len(prompt_ids) + val_labels)
             prompt_last_indices.append(len(prompt_ids) - 1)
             plans.append(build_structured_label_plan(record, self.max_slots))
 
@@ -203,6 +341,8 @@ class HFRevisionCollator:
             return_tensors="pt",
         )
         labels = torch.full_like(padded["input_ids"], -100)
+        structure_labels_tensor = torch.full_like(padded["input_ids"], -100)
+        value_labels_tensor = torch.full_like(padded["input_ids"], -100)
         pool_indices: list[int] = []
         for row_index, row_labels in enumerate(label_rows):
             left_offset = (
@@ -213,11 +353,19 @@ class HFRevisionCollator:
             labels[row_index, left_offset : left_offset + len(row_labels)] = torch.tensor(
                 row_labels, dtype=torch.long
             )
+            structure_labels_tensor[row_index, left_offset : left_offset + len(row_labels)] = torch.tensor(
+                structure_label_rows[row_index], dtype=torch.long
+            )
+            value_labels_tensor[row_index, left_offset : left_offset + len(row_labels)] = torch.tensor(
+                value_label_rows[row_index], dtype=torch.long
+            )
             pool_indices.append(prompt_last_indices[row_index] + left_offset)
 
         return {
             **padded,
             "lm_labels": labels,
+            "structure_labels": structure_labels_tensor,
+            "value_labels": value_labels_tensor,
             "pool_indices": torch.tensor(pool_indices, dtype=torch.long),
             "decision_labels": torch.tensor(
                 [plan.decision_label for plan in plans], dtype=torch.long

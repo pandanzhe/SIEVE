@@ -1,0 +1,8 @@
+base: sft_qwen25_3b.yaml
+
+# Server-local assets stay repository-relative so the run remains portable.
+paths:
+  output_dir: outputs/stage1-qwen25-3b-rerun-20260812
+
+model:
+  path: model/Qwen25-3B

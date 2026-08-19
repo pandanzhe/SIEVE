@@ -6,8 +6,8 @@
   },
   "schema_version": "sieve.rl.scenario.v1",
   "seed": 42,
-  "source_file": "records.jsonl",
-  "source_sha256": "521d99a83f8df420397c0b527039695ec18a3d7021c4cd850e7c5e961b278b61",
+  "source_file": "accepted.jsonl",
+  "source_sha256": "bd1c3f795aba6effba30ae24e0de3df1bfb17c34ebbb00db51b846091fe27dba",
   "split_counts": {
     "dev": 200,
     "test": 300,
@@ -15,8 +15,8 @@
   },
   "split_policy": "sha256(seed:base_task_id), 75/10/15 before augmentation",
   "split_sha256": {
-    "dev": "337b6d2ffb297002afc2c7b20eacac1244f95fce26845e06bbc2f729064c4300",
-    "test": "e6381ccc160b8ee5c71593cfcbee3ff73e60e3d9d7f92b3772ab826fe691e68c",
-    "train": "fa2dc15817e8dcb0df6f0e1b43b7ab05dc6f23af90b95239620416b9fc383074"
+    "dev": "5a1cff94110fa1ce5f0724c13ba7832e0fad9e72f39ca169596aa979b2b684f6",
+    "test": "4f211f6b42e1bd21ce93c71f80b81c4f023e7da779da0f3d5b598ae895a6d09c",
+    "train": "c15a5c99e3aad762c69c0fa47362dae6fc2a5f9bbdae86fce75fd8c16964be51"
   }
 }

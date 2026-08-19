@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
@@ -12,3 +12,23 @@ outputs/
 tmp/
 model/*
 !model/README.md
+
+# IDE
+.vscode/
+.idea/
+
+# Large training data JSONL (regenerate with scripts/build_sft_v3.py)
+data/sft/clean/*.jsonl
+data/sft/source/records.jsonl
+data/rl/scenarios/*.jsonl
+
+# Raw benchmark repos (download separately)
+data/raw/tau2-bench/
+data/raw/car-bench/
+
+# Response cache (contains API outputs)
+response_cache.jsonl
+
+# OS
+.DS_Store
+Thumbs.db

@@ -63,7 +63,10 @@ def record_from_dict(raw: dict[str, Any]) -> SFTRecord:
         Decision(target_raw["decision"]), tuple(target_raw["affected_fields"]), patches, verification
     )
     revision_context = RevisionContext(state, obs, context["goal"], risk, budget, ledger)
-    return SFTRecord(raw["scenario_id"], revision_context, target, int(raw.get("step_index", 0)))
+    # v3 records use "record_id"; v2 records use "scenario_id"
+    scenario_id = raw.get("scenario_id") or raw.get("record_id", "")
+    step_index = int(raw.get("step_index", 0))
+    return SFTRecord(scenario_id, revision_context, target, step_index)
 
 
 def read_jsonl(path: str | Path) -> list[SFTRecord]:

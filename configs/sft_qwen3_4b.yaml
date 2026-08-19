@@ -25,9 +25,7 @@ lora:
 
 loss_weights:
   decision: 1.0
-  affected: 1.0
-  verification: 1.0
-  patch_operation: 1.0
+  structure: 1.0
   patch_value: 1.0
 
 train:

@@ -1,0 +1,16 @@
+{
+  "source_manifest": "tmp/sft-v3-build/normalized/manifest.json",
+  "output_dir": "tmp/sft-v3-build",
+  "total": 6000,
+  "batch_size": 10,
+  "seed": 42,
+  "max_attempts": 3,
+  "max_requests": 2000,
+  "prompt_version": "v1",
+  "rule_version": "v1",
+  "trajectory_mode": true,
+  "temperature": 0.6,
+  "max_tokens": 4096,
+  "glm_max_retries": 2,
+  "resume": true
+}

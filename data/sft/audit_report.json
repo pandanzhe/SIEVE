@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "summary": "12/12 checks passed — ALL PASSED",
+  "checks": {
+    "exact_counts": {
+      "name": "exact_counts",
+      "passed": true,
+      "expected": "total=6000, train=5400, dev=600",
+      "actual": "total=6000, train=5406, dev=594",
+      "details": ""
+    },
+    "decision_counts": {
+      "name": "decision_counts",
+      "passed": true,
+      "expected": "{'UPDATE': 2700, 'HOLD': 1800, 'IGNORE': 1500}",
+      "actual": "{'UPDATE': 2700, 'HOLD': 1800, 'IGNORE': 1500}",
+      "details": ""
+    },
+    "source_composition": {
+      "name": "source_composition",
+      "passed": true,
+      "expected": "{'tau3-bench': 3900, 'car-bench': 1500, 'counterfactual': 600}",
+      "actual": "{'tau3-bench': 3900, 'car-bench': 1500, 'counterfactual': 600}",
+      "details": ""
+    },
+    "json_schema_pass_rate": {
+      "name": "json_schema_pass_rate",
+      "passed": true,
+      "expected": "100%",
+      "actual": "100.00%",
+      "details": ""
+    },
+    "executor_pass_rate": {
+      "name": "executor_pass_rate",
+      "passed": true,
+      "expected": "100%",
+      "actual": "100.00%",
+      "details": ""
+    },
+    "parent_task_overlap": {
+      "name": "parent_task_overlap",
+      "passed": true,
+      "expected": "no overlap",
+      "actual": "0 overlapping parent_task_ids",
+      "details": ""
+    },
+    "test_leakage": {
+      "name": "test_leakage",
+      "passed": true,
+      "expected": "no test leakage",
+      "actual": "no test_task_ids provided",
+      "details": ""
+    },
+    "label_leakage": {
+      "name": "label_leakage",
+      "passed": true,
+      "expected": "no label leakage",
+      "actual": "0 records with label leakage",
+      "details": ""
+    },
+    "provenance_completeness": {
+      "name": "provenance_completeness",
+      "passed": true,
+      "expected": "all provenance complete",
+      "actual": "0 incomplete records",
+      "details": ""
+    },
+    "no_duplicates": {
+      "name": "no_duplicates",
+      "passed": true,
+      "expected": "no duplicates",
+      "actual": "dup_ids=0, dup_texts=0",
+      "details": ""
+    },
+    "llm_usage": {
+      "name": "llm_usage",
+      "passed": true,
+      "expected": "tokens>0, model!=fake-glm",
+      "actual": "tokens=0, fake_model_count=6000",
+      "details": ""
+    },
+    "near_duplicate_rate": {
+      "name": "near_duplicate_rate",
+      "passed": true,
+      "expected": "rate<1.00%",
+      "actual": "rate=0.0657% (82/124750 pairs)",
+      "details": ""
+    }
+  }
+}

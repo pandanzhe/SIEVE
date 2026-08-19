@@ -1,0 +1,63 @@
+backend: hf_constrained_grpo
+seed: 42
+expected_split_counts:
+  train: 1600
+  dev: 200
+  test: 300
+
+paths:
+  stage1_dev_file: data/sft/clean/dev.jsonl
+  readiness_report: outputs/stage1-qwen3-4b/readiness.json
+  sft_source_file: data/sft/source/records.jsonl
+  train_file: data/rl/scenarios/train.jsonl
+  dev_file: data/rl/scenarios/dev.jsonl
+  test_file: data/rl/scenarios/test.jsonl
+  model_path: model
+  sft_checkpoint: outputs/stage1-qwen3-4b/best
+  output_dir: outputs/stage2-qwen3-4b
+
+model:
+  dtype: bfloat16
+  enable_thinking: false
+  max_prompt_length: 1536
+  max_completion_length: 384
+  gradient_checkpointing: true
+  attention_implementation: sdpa
+
+rollout:
+  group_size: 4
+  groups_per_iteration: 2
+  max_episode_steps: 8
+  temperature: 1.0
+  top_p: 1.0
+
+train:
+  iterations: 200
+  update_epochs: 1
+  micro_batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 0.000005
+  weight_decay: 0.0
+  warmup_ratio: 0.03
+  clip_ratio: 0.20
+  kl_coefficient: 0.02
+  gamma: 0.97
+  multiplier_learning_rate: 0.08
+  max_grad_norm: 1.0
+  eval_steps: 20
+  save_steps: 20
+  save_total_limit: 2
+  resume_from:
+
+hardware:
+  num_processes: 1
+
+constraints:
+  false_update: 0.03
+  unsafe_action: 0.01
+  verification: 1.00
+  stall: 0.10
+  invalid_format: 0.02
+  invalid_patch: 0.01
+  collateral_edit: 0.00
+  budget_violation: 0.00

@@ -1,0 +1,56 @@
+{
+  "purpose": "V3 Stage-1 SFT source data: tau3-bench train + CAR-bench train",
+  "schema_version": 3,
+  "sources": [
+    {
+      "bytes": 159049,
+      "dataset": "tau3-bench",
+      "domain": "airline",
+      "format": "json",
+      "license": "MIT",
+      "path": "data\\raw\\tau2-bench\\data\\tau2\\domains\\airline\\tasks.json",
+      "sha256": "34dfcf0622792d0d0fa32aa491d21582e1b5d3ec1948e7743bae881885f878ea",
+      "version": "v3-train-only"
+    },
+    {
+      "bytes": 355019,
+      "dataset": "tau3-bench",
+      "domain": "retail",
+      "format": "json",
+      "license": "MIT",
+      "path": "data\\raw\\tau2-bench\\data\\tau2\\domains\\retail\\tasks.json",
+      "sha256": "f44563d8f36362e2dc58282bb02cfb85010d22f27d9439808758d3e9b2bc16d2",
+      "version": "v3-train-only"
+    },
+    {
+      "bytes": 14340799,
+      "dataset": "tau3-bench",
+      "domain": "telecom",
+      "format": "json",
+      "license": "MIT",
+      "path": "data\\raw\\tau2-bench\\data\\tau2\\domains\\telecom\\tasks.json",
+      "sha256": "20793073500dba5761f76d038dd32a343903985af442b3eae7eeb3a4e0d5d75d",
+      "version": "v3-train-only"
+    },
+    {
+      "bytes": 20020,
+      "dataset": "car-bench",
+      "format": "jsonl",
+      "license": "Apache-2.0",
+      "path": "data\\raw\\car-bench\\serialized\\base_train.jsonl",
+      "sha256": "1b3bd087be4cb5d157f1090b1ac8046f6027066767d95a58fb2e815ae7ff7e50",
+      "split": "base_train",
+      "version": "v3-train-only"
+    },
+    {
+      "bytes": 14698,
+      "dataset": "car-bench",
+      "format": "jsonl",
+      "license": "Apache-2.0",
+      "path": "data\\raw\\car-bench\\serialized\\disambiguation_train.jsonl",
+      "sha256": "3b7e62f5eeb6dd5163ddf1e8db44b0c826765a7e408614f72ae22fd324f3ac49",
+      "split": "disambiguation_train",
+      "version": "v3-train-only"
+    }
+  ]
+}

@@ -24,6 +24,26 @@ def local_model_missing_files(model_path: str | Path) -> tuple[str, ...]:
 def local_model_ready(model_path: str | Path) -> bool:
     return not local_model_missing_files(model_path)
 
+
+def _enable_non_reentrant_gradient_checkpointing(backbone: Any) -> None:
+    """Enable checkpointing without reentrant autograd hooks that conflict with DDP."""
+    backbone.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": False}
+    )
+    if hasattr(backbone, "enable_input_require_grads"):
+        backbone.enable_input_require_grads()
+
+
+def _ddp_zero_loss_anchors(result: Mapping[str, Any]) -> list[Any]:
+    """Keep every conditional structured head in the DDP graph at zero cost."""
+    anchors = [result["decision_logits"].sum() * 0.0]
+    if "structure_loss" in result:
+        anchors.append(result["structure_loss"] * 0.0)
+    if "value_loss" in result:
+        anchors.append(result["value_loss"] * 0.0)
+    return anchors
+
+
 def create_hf_lora_policy(
     model_path: str | Path,
     max_slots: int,
@@ -79,9 +99,7 @@ def create_hf_lora_policy(
     backbone = AutoModelForCausalLM.from_pretrained(resolved_model, **model_args)
     backbone.config.use_cache = False
     if gradient_checkpointing:
-        backbone.gradient_checkpointing_enable()
-        if hasattr(backbone, "enable_input_require_grads"):
-            backbone.enable_input_require_grads()
+        _enable_non_reentrant_gradient_checkpointing(backbone)
     lora = LoraConfig(
         r=lora_rank,
         lora_alpha=lora_alpha,
@@ -95,9 +113,7 @@ def create_hf_lora_policy(
     operation_count = 5
     weights = {
         "decision": 1.0,
-        "affected": 1.0,
-        "verification": 1.0,
-        "patch_operation": 1.0,
+        "structure": 1.0,
         "patch_value": 1.0,
         **dict(loss_weights or {}),
     }
@@ -107,11 +123,6 @@ def create_hf_lora_policy(
             super().__init__()
             self.backbone = backbone
             self.decision_head = nn.Linear(hidden_size, 3)
-            self.affected_head = nn.Linear(hidden_size, max_slots)
-            self.verification_head = nn.Linear(hidden_size, 2)
-            self.patch_operation_head = nn.Linear(
-                hidden_size, max_slots * operation_count
-            )
 
         def _head_input(self, pooled: Any) -> Any:
             return pooled.to(self.decision_head.weight.dtype)
@@ -130,69 +141,49 @@ def create_hf_lora_policy(
             head_input = self._head_input(pooled)
             result = {
                 "decision_logits": self.decision_head(head_input),
-                "affected_logits": self.affected_head(head_input),
-                "verification_logits": self.verification_head(head_input),
-                "patch_operation_logits": self.patch_operation_head(head_input).view(
-                    -1, max_slots, operation_count
-                ),
                 "lm_logits": outputs.logits,
             }
-            weighted_losses = []
+            weighted_losses = _ddp_zero_loss_anchors(result)
+            # --- Three-objective loss: decision, structure, patch_value ---
             if "decision_labels" in batch:
                 loss = functional.cross_entropy(
                     result["decision_logits"], batch["decision_labels"]
                 )
                 result["decision_loss"] = loss
                 weighted_losses.append(weights["decision"] * loss)
-            if "affected_labels" in batch:
-                per_slot = functional.binary_cross_entropy_with_logits(
-                    result["affected_logits"],
-                    batch["affected_labels"].to(result["affected_logits"].dtype),
-                    reduction="none",
-                )
-                active = batch["affected_mask"].bool()
-                if active.any():
-                    loss = per_slot[active].mean()
-                    result["affected_loss"] = loss
-                    weighted_losses.append(weights["affected"] * loss)
-            if "verification_labels" in batch:
-                active = batch["verification_labels"] != -100
+            # Structure loss: causal-LM on JSON structure tokens
+            if "structure_labels" in batch:
+                shift_logits = outputs.logits[:, :-1, :].contiguous()
+                shift_labels = batch["structure_labels"][:, 1:].contiguous()
+                active = shift_labels != -100
                 if active.any():
                     loss = functional.cross_entropy(
-                        result["verification_logits"][active],
-                        batch["verification_labels"][active],
+                        shift_logits.view(-1, shift_logits.size(-1)),
+                        shift_labels.view(-1),
+                        ignore_index=-100,
                     )
-                    result["verification_loss"] = loss
-                    weighted_losses.append(weights["verification"] * loss)
-            if "patch_operation_labels" in batch:
-                per_operation = functional.binary_cross_entropy_with_logits(
-                    result["patch_operation_logits"],
-                    batch["patch_operation_labels"].to(
-                        result["patch_operation_logits"].dtype
-                    ),
-                    reduction="none",
-                )
-                active = batch["patch_operation_mask"].bool()
+                    result["structure_loss"] = loss
+                    weighted_losses.append(weights["structure"] * loss)
+            # Patch-value loss: causal-LM on writable patch-value tokens
+            if "value_labels" in batch:
+                shift_logits = outputs.logits[:, :-1, :].contiguous()
+                shift_labels = batch["value_labels"][:, 1:].contiguous()
+                active = shift_labels != -100
                 if active.any():
-                    loss = per_operation[active].mean()
-                    result["patch_operation_loss"] = loss
-                    weighted_losses.append(weights["patch_operation"] * loss)
-            if outputs.loss is not None:
-                result["patch_value_loss"] = outputs.loss
-                weighted_losses.append(weights["patch_value"] * outputs.loss)
+                    loss = functional.cross_entropy(
+                        shift_logits.view(-1, shift_logits.size(-1)),
+                        shift_labels.view(-1),
+                        ignore_index=-100,
+                    )
+                    result["value_loss"] = loss
+                    weighted_losses.append(weights["patch_value"] * loss)
             if not weighted_losses:
                 raise ValueError("training batch contains no supervised targets")
             result["loss"] = torch.stack(weighted_losses).sum()
             return result
 
         def structured_head_parameters(self) -> tuple[Any, ...]:
-            modules = (
-                self.decision_head,
-                self.affected_head,
-                self.verification_head,
-                self.patch_operation_head,
-            )
-            return tuple(parameter for module in modules for parameter in module.parameters())
+            return tuple(self.decision_head.parameters())
 
         def adapter_parameters(self) -> tuple[Any, ...]:
             head_ids = {id(parameter) for parameter in self.structured_head_parameters()}
@@ -215,22 +206,19 @@ def create_hf_lora_policy(
             torch.save(
                 {
                     "decision": self.decision_head.state_dict(),
-                    "affected": self.affected_head.state_dict(),
-                    "verification": self.verification_head.state_dict(),
-                    "patch_operation": self.patch_operation_head.state_dict(),
                 },
                 target / "structured_heads.pt",
             )
             metadata = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "base_model_path": str(resolved_model),
                 "max_slots": max_slots,
-                "patch_operation_count": operation_count,
                 "lora_rank": lora_rank,
                 "lora_alpha": lora_alpha,
                 "target_modules": list(target_modules),
                 "dtype": dtype,
                 "enable_thinking": False,
+                "loss_objectives": ["decision", "structure", "patch_value"],
             }
             (target / "metadata.json").write_text(
                 json.dumps(metadata, indent=2), encoding="utf-8"

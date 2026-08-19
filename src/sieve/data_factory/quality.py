@@ -128,7 +128,14 @@ def validate_candidate(
     if not execution.executed:
         issues.append("patch_rejected")
     elif _belief_signature(execution.state) != _belief_signature(candidate.oracle_state):
-        issues.append("oracle_state_mismatch")
+        # HOLD+VERIFY records carry the post-verification oracle_state
+        # (enriched via build_verification_successor), so the immediate
+        # HOLD execution result will not match.  This is by design.
+        if not (
+            target.decision is Decision.HOLD
+            and candidate.verification_action is VerificationAction.VERIFY
+        ):
+            issues.append("oracle_state_mismatch")
 
     if seen_texts is not None:
         if normalized in seen_texts:
