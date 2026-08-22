@@ -1,0 +1,55 @@
+nohup: ignoring input
+/usr/bin/python
+/usr/bin/python
+2.7.1
+1.12.0
+4.57.1
+0.18.0
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--num_machines` was set to a value of `1`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/usr/local/lib/python3.11/dist-packages/accelerate/commands/launch.py", line 1291, in <module>
+    main()
+  File "/usr/local/lib/python3.11/dist-packages/accelerate/commands/launch.py", line 1287, in main
+    launch_command(args)
+  File "/usr/local/lib/python3.11/dist-packages/accelerate/commands/launch.py", line 1272, in launch_command
+    multi_gpu_launcher(args)
+  File "/usr/local/lib/python3.11/dist-packages/accelerate/commands/launch.py", line 899, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/run.py", line 883, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/launcher/api.py", line 139, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/launcher/api.py", line 261, in launch_agent
+    result = agent.run()
+             ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/metrics/api.py", line 138, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/agent/server/api.py", line 711, in run
+    result = self._invoke_run(role)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/agent/server/api.py", line 864, in _invoke_run
+    self._initialize_workers(self._worker_group)
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/metrics/api.py", line 138, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/agent/server/api.py", line 683, in _initialize_workers
+    self._rendezvous(worker_group)
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/metrics/api.py", line 138, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/agent/server/api.py", line 500, in _rendezvous
+    rdzv_info = spec.rdzv_handler.next_rendezvous()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/distributed/elastic/rendezvous/static_tcp_rendezvous.py", line 67, in next_rendezvous
+    self._store = TCPStore(  # type: ignore[call-arg]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.distributed.DistNetworkError: The server socket has failed to listen on any local network address. port: 29537, useIpv6: false, code: -98, name: EADDRINUSE, message: address already in use

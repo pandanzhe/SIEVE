@@ -5,7 +5,9 @@ import importlib.metadata
 import importlib.util
 import json
 import math
+import os
 import shutil
+import time
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +15,6 @@ from ..data.io import read_jsonl
 from ..policies.hf_data import HFRevisionCollator, build_structured_label_plan
 from ..policies.hf_lora_policy import create_hf_lora_policy, local_model_ready
 from .hf_sft_config import HFSFTConfig
-from .hf_sft_metrics import compute_structured_metrics
 
 
 _OPTIONAL_PACKAGES = ("torch", "transformers", "peft", "accelerate")
@@ -84,9 +85,7 @@ def checkpoint_score(metrics: dict[str, float]) -> float:
     """Select a useful checkpoint while strongly penalizing false state updates."""
     return (
         metrics.get("decision_macro_f1", 0.0)
-        + metrics.get("affected_micro_f1", 0.0)
-        + metrics.get("verification_f1", 0.0)
-        + metrics.get("patch_operation_micro_f1", 0.0)
+        - metrics.get("loss", 0.0)
         - 2.0 * metrics.get("false_update_rate", 0.0)
     )
 
@@ -106,16 +105,11 @@ def _evaluate(model: Any, batches: Any, accelerator: Any) -> dict[str, float]:
 
     model.eval()
     losses: list[float] = []
+    decision_losses: list[float] = []
+    structure_losses: list[float] = []
+    value_losses: list[float] = []
     decisions_pred: list[int] = []
     decisions_gold: list[int] = []
-    affected_pred: list[list[int]] = []
-    affected_gold: list[list[int]] = []
-    affected_masks: list[list[int]] = []
-    verification_pred: list[int] = []
-    verification_gold: list[int] = []
-    patch_pred: list[list[list[int]]] = []
-    patch_gold: list[list[list[int]]] = []
-    patch_masks: list[list[int]] = []
 
     with torch.no_grad():
         for batch in batches:
@@ -126,16 +120,6 @@ def _evaluate(model: Any, batches: Any, accelerator: Any) -> dict[str, float]:
             tensors = {
                 "decision_pred": output["decision_logits"].argmax(dim=-1),
                 "decision_gold": batch["decision_labels"],
-                "affected_pred": (output["affected_logits"].sigmoid() >= 0.5).long(),
-                "affected_gold": batch["affected_labels"].long(),
-                "affected_mask": batch["affected_mask"].long(),
-                "verification_pred": output["verification_logits"].argmax(dim=-1),
-                "verification_gold": batch["verification_labels"],
-                "patch_pred": (
-                    output["patch_operation_logits"].sigmoid() >= 0.5
-                ).long(),
-                "patch_gold": batch["patch_operation_labels"].long(),
-                "patch_mask": batch["patch_operation_mask"].long(),
             }
             gathered = {
                 name: accelerator.gather_for_metrics(tensor).cpu().tolist()
@@ -143,28 +127,72 @@ def _evaluate(model: Any, batches: Any, accelerator: Any) -> dict[str, float]:
             }
             decisions_pred.extend(gathered["decision_pred"])
             decisions_gold.extend(gathered["decision_gold"])
-            affected_pred.extend(gathered["affected_pred"])
-            affected_gold.extend(gathered["affected_gold"])
-            affected_masks.extend(gathered["affected_mask"])
-            verification_pred.extend(gathered["verification_pred"])
-            verification_gold.extend(gathered["verification_gold"])
-            patch_pred.extend(gathered["patch_pred"])
-            patch_gold.extend(gathered["patch_gold"])
-            patch_masks.extend(gathered["patch_mask"])
 
-    metrics = compute_structured_metrics(
-        decision_predictions=decisions_pred,
-        decision_targets=decisions_gold,
-        affected_predictions=affected_pred,
-        affected_targets=affected_gold,
-        affected_masks=affected_masks,
-        verification_predictions=verification_pred,
-        verification_targets=verification_gold,
-        patch_predictions=patch_pred,
-        patch_targets=patch_gold,
-        patch_masks=patch_masks,
+            for name, sink in (
+                ("decision_loss", decision_losses),
+                ("structure_loss", structure_losses),
+                ("value_loss", value_losses),
+            ):
+                if name in output:
+                    gathered_branch_loss = accelerator.gather_for_metrics(
+                        output[name].detach().reshape(1)
+                    )
+                    sink.extend(gathered_branch_loss.float().cpu().tolist())
+
+    if not decisions_gold:
+        raise ValueError("SFT evaluation received no batches")
+    decision_correct = sum(
+        pred == gold for pred, gold in zip(decisions_pred, decisions_gold, strict=True)
     )
+    f1_values = []
+    for label in range(3):
+        true_positive = sum(
+            pred == label and gold == label
+            for pred, gold in zip(decisions_pred, decisions_gold, strict=True)
+        )
+        false_positive = sum(
+            pred == label and gold != label
+            for pred, gold in zip(decisions_pred, decisions_gold, strict=True)
+        )
+        false_negative = sum(
+            pred != label and gold == label
+            for pred, gold in zip(decisions_pred, decisions_gold, strict=True)
+        )
+        precision = (
+            true_positive / (true_positive + false_positive)
+            if true_positive + false_positive
+            else 0.0
+        )
+        recall = (
+            true_positive / (true_positive + false_negative)
+            if true_positive + false_negative
+            else 0.0
+        )
+        f1_values.append(
+            2.0 * precision * recall / (precision + recall)
+            if precision + recall
+            else 0.0
+        )
+    non_update_indices = [
+        index for index, gold in enumerate(decisions_gold) if gold != 0
+    ]
+    metrics = {
+        "decision_accuracy": decision_correct / len(decisions_gold),
+        "decision_macro_f1": sum(f1_values) / len(f1_values),
+        "false_update_rate": (
+            sum(decisions_pred[index] == 0 for index in non_update_indices)
+            / len(non_update_indices)
+            if non_update_indices
+            else 0.0
+        ),
+    }
     metrics["loss"] = sum(losses) / max(len(losses), 1)
+    if decision_losses:
+        metrics["decision_loss"] = sum(decision_losses) / len(decision_losses)
+    if structure_losses:
+        metrics["structure_loss"] = sum(structure_losses) / len(structure_losses)
+    if value_losses:
+        metrics["value_loss"] = sum(value_losses) / len(value_losses)
     model.train()
     return metrics
 
@@ -172,6 +200,40 @@ def _evaluate(model: Any, batches: Any, accelerator: Any) -> dict[str, float]:
 def _append_metrics(path: Path, payload: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{seconds:02d}s"
+    return f"{minutes}m{seconds:02d}s"
+
+
+def _trim_for_distributed_batches(
+    records: list[Any],
+    divisor: int,
+    split_name: str,
+    accelerator: Any,
+) -> list[Any]:
+    """Keep all ranks on the same number of collectives in DDP runs."""
+    if divisor <= 1:
+        return records
+    keep = (len(records) // divisor) * divisor
+    if keep <= 0:
+        raise ValueError(
+            f"{split_name} split has too few records for distributed batch divisor "
+            f"{divisor}: {len(records)}"
+        )
+    dropped = len(records) - keep
+    if dropped and accelerator.is_main_process:
+        print(
+            f"[sft-data] split={split_name} records={len(records)} "
+            f"using={keep} dropped_tail={dropped} divisor={divisor}",
+            flush=True,
+        )
+    return records[:keep]
 
 
 def _prune_states(output_dir: Path, keep: int) -> None:
@@ -208,6 +270,20 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
     )
     train_records = read_jsonl(config.paths.train_file)
     dev_records = read_jsonl(config.paths.dev_file)
+    train_records = _trim_for_distributed_batches(
+        train_records,
+        config.train.micro_batch_size
+        * accelerator.num_processes
+        * config.train.gradient_accumulation_steps,
+        "train",
+        accelerator,
+    )
+    dev_records = _trim_for_distributed_batches(
+        dev_records,
+        config.train.micro_batch_size * accelerator.num_processes,
+        "dev",
+        accelerator,
+    )
     model, tokenizer = create_hf_lora_policy(
         config.model.path,
         config.model.max_slots,
@@ -259,9 +335,12 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
             },
         ]
     )
-    updates_per_epoch = math.ceil(
-        len(train_loader) / config.train.gradient_accumulation_steps
+    global_batch_size = (
+        config.train.micro_batch_size
+        * accelerator.num_processes
+        * config.train.gradient_accumulation_steps
     )
+    updates_per_epoch = len(train_records) // global_batch_size
     total_updates = updates_per_epoch * config.train.epochs
     scheduler = get_cosine_schedule_with_warmup(
         optimizer,
@@ -285,6 +364,25 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
     metrics_path = output_dir / "metrics.jsonl"
     best_score = float("-inf")
     global_step = 0
+    log_every = int(os.environ.get("SIEVE_LOG_STEPS", "10"))
+    if log_every <= 0:
+        log_every = 10
+    train_start_time = time.time()
+    if accelerator.is_main_process:
+        print(
+            "[sft-start] "
+            f"epochs={config.train.epochs} "
+            f"train_records={len(train_records)} "
+            f"dev_records={len(dev_records)} "
+            f"micro_batch_size={config.train.micro_batch_size} "
+            f"gradient_accumulation_steps={config.train.gradient_accumulation_steps} "
+            f"world_size={accelerator.num_processes} "
+            f"updates_per_epoch={updates_per_epoch} "
+            f"total_updates={total_updates} "
+            f"log_every={log_every} "
+            f"eval_steps={config.train.eval_steps}",
+            flush=True,
+        )
     optimizer.zero_grad(set_to_none=True)
     for epoch in range(config.train.epochs):
         model.train()
@@ -302,6 +400,35 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
             if not accelerator.sync_gradients:
                 continue
             global_step += 1
+            if global_step == 1 or global_step % log_every == 0:
+                train_metrics: dict[str, float] = {}
+                for name in ("loss", "decision_loss", "structure_loss", "value_loss"):
+                    if name in output:
+                        gathered = accelerator.gather_for_metrics(
+                            output[name].detach().reshape(1)
+                        )
+                        train_metrics[name] = float(gathered.float().mean().cpu())
+                if accelerator.is_main_process:
+                    elapsed = time.time() - train_start_time
+                    progress = global_step / max(total_updates, 1)
+                    eta = elapsed / progress - elapsed if progress > 0 else 0.0
+                    lr_values = [group["lr"] for group in optimizer.param_groups]
+                    lr_text = ",".join(f"{lr:.3e}" for lr in lr_values)
+                    metric_text = " ".join(
+                        f"train_{name}={value:.6f}"
+                        for name, value in train_metrics.items()
+                    )
+                    print(
+                        "[sft-train] "
+                        f"epoch={epoch + 1}/{config.train.epochs} "
+                        f"step={global_step}/{total_updates} "
+                        f"progress={progress:.2%} "
+                        f"{metric_text} "
+                        f"lr={lr_text} "
+                        f"elapsed={_format_seconds(elapsed)} "
+                        f"eta={_format_seconds(eta)}",
+                        flush=True,
+                    )
             if global_step % config.train.eval_steps == 0:
                 metrics = _evaluate(model, dev_loader, accelerator)
                 score = checkpoint_score(metrics)
@@ -309,6 +436,20 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
                     _append_metrics(
                         metrics_path,
                         {"epoch": epoch + 1, "step": global_step, "score": score, **metrics},
+                    )
+                    print(
+                        "[sft-eval] "
+                        + json.dumps(
+                            {
+                                "epoch": epoch + 1,
+                                "step": global_step,
+                                "score": score,
+                                **metrics,
+                            },
+                            ensure_ascii=False,
+                            sort_keys=True,
+                        ),
+                        flush=True,
                     )
                     if score > best_score:
                         best_score = score
@@ -323,6 +464,20 @@ def train_hf_sft(config: HFSFTConfig) -> dict[str, Any]:
             _append_metrics(
                 metrics_path,
                 {"epoch": epoch + 1, "step": global_step, "score": score, **metrics},
+            )
+            print(
+                "[sft-eval] "
+                + json.dumps(
+                    {
+                        "epoch": epoch + 1,
+                        "step": global_step,
+                        "score": score,
+                        **metrics,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                flush=True,
             )
             if score > best_score:
                 best_score = score

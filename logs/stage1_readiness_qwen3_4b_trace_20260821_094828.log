@@ -1,0 +1,722 @@
+nohup: ignoring input
+[readiness] load policy start model=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/model/Qwen3-4B checkpoint=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage1-qwen3-4b/best
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 33.35it/s]
+[readiness] load policy done device=cuda:0 samples=50
+[readiness] SFT dev free-generation start samples=50
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[readiness] SFT dev free-generation 1/50 progress=2.00% elapsed=2s eta=2m00s
+[readiness] SFT dev free-generation 10/50 progress=20.00% elapsed=19s eta=1m19s
+[readiness] SFT dev free-generation 20/50 progress=40.00% elapsed=40s eta=1m01s
+[readiness] SFT dev free-generation 30/50 progress=60.00% elapsed=1m01s eta=41s
+[readiness] SFT dev free-generation 40/50 progress=80.00% elapsed=1m23s eta=20s
+[readiness] SFT dev free-generation 50/50 progress=100.00% elapsed=1m42s eta=0s
+[readiness] SFT dev free-generation done parse_rate=1.0000 executable_rate=1.0000 decision_macro_f1=0.3333 full_action_exact_match=1.0000
+[readiness] GRPO group probe start scenarios=2 group_size=4
+[readiness] GRPO group probe 1/2 progress=50.00% elapsed=27s eta=27s
+[readiness] GRPO group probe 2/2 progress=100.00% elapsed=56s eta=0s
+[readiness] GRPO group probe done group_reward_variance=0.000000
+[readiness] stage2 closed-loop start scenarios=10
+[readiness] stage2 closed-loop 1/10 progress=10.00% elapsed=7s eta=1m03s
+[readiness] stage2 closed-loop 10/10 progress=100.00% elapsed=1m04s eta=0s
+[readiness] stage2 closed-loop done success_rate=0.0000 parse_rate=1.0000 false_update_rate=0.0000
+{
+  "ready_for_stage2": false,
+  "failures": {
+    "decision_macro_f1": "observed=0.333333, required min 0.9",
+    "group_reward_variance": "observed=0, required min_exclusive 0",
+    "closed_loop_success_rate": "observed=0, required min 0.6"
+  },
+  "sample_count": 50,
+  "probe_scenarios": 2,
+  "closed_loop_scenarios": 10,
+  "metrics": {
+    "parse_rate": 1.0,
+    "executable_rate": 1.0,
+    "decision_macro_f1": 0.3333333333333333,
+    "decision_accuracy": 1.0,
+    "false_update_rate": 0.0,
+    "full_action_exact_match": 1.0,
+    "patch_value_exact_match": 1.0,
+    "group_reward_variance": 0.0,
+    "closed_loop_success_rate": 0.0,
+    "closed_loop_parse_rate": 1.0,
+    "closed_loop_false_update_rate": 0.0,
+    "closed_loop_verification_rate": 0.0,
+    "closed_loop_stall_rate": 0.225,
+    "closed_loop_invalid_patch_rate": 0.0,
+    "closed_loop_mean_return": 0.044264640499999994,
+    "closed_loop_failure_traces": [
+      {
+        "scenario_id": "rl:012d05dd50585a9c",
+        "base_task_id": "tau3-bench:tau3:retail:79",
+        "macro_domain": "commerce",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "fulfillment_readiness": "ready",
+          "item_ids": [
+            "3453331371"
+          ]
+        },
+        "final_belief_slots": [
+          {
+            "id": "item_ids",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700000231,
+            "valid_from": null,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "fulfillment_readiness",
+            "value": "ready",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700000235,
+            "valid_from": 1700000235,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "retail",
+              "entity": "#W8661412"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000231,
+            "valid_from": 1700000231,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "item_ids": "verify_item_ids"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000231,
+            "valid_from": 1700000231,
+            "entity": "#W8661412"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "item_ids",
+              "value": [
+                "3453331371"
+              ],
+              "source": "unverified_channel",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "item_ids",
+              "value": "Isabella",
+              "source": "official_api",
+              "entity": "retail-task-26",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "ready",
+              "source": "official_api",
+              "entity": "#W8661412",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"fulfillment_readiness\",\"value\":\"ready\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "fulfillment_readiness",
+                  "value": "ready"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "not_ready",
+              "source": "cached_replica",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"fulfillment_readiness\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_fulfillment_readiness\",\"field_id\":\"fulfillment_readiness\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "fulfillment_readiness",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_fulfillment_readiness",
+                "field_id": "fulfillment_readiness"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      },
+      {
+        "scenario_id": "rl:13162dbbe533f7da",
+        "base_task_id": "tau3-bench:tau3:airline:26",
+        "macro_domain": "service",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "service_request_status": "confirmed",
+          "unknown": null
+        },
+        "final_belief_slots": [
+          {
+            "id": "unknown",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700000082,
+            "valid_from": null,
+            "entity": "airline-task-26"
+          },
+          {
+            "id": "service_request_status",
+            "value": "confirmed",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700000086,
+            "valid_from": 1700000086,
+            "entity": "airline-task-26"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "airline",
+              "entity": "airline-task-26"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000082,
+            "valid_from": 1700000082,
+            "entity": "airline-task-26"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "unknown": "verify_unknown"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000082,
+            "valid_from": 1700000082,
+            "entity": "airline-task-26"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "unknown",
+              "value": null,
+              "source": "unverified_channel",
+              "entity": "airline-task-26",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "unknown",
+              "value": "economy",
+              "source": "official_api",
+              "entity": "M05KNL",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "service_request_status",
+              "value": "confirmed",
+              "source": "official_api",
+              "entity": "airline-task-26",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"service_request_status\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"service_request_status\",\"value\":\"confirmed\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "service_request_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "service_request_status",
+                  "value": "confirmed"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "service_request_status",
+              "value": "unconfirmed",
+              "source": "cached_replica",
+              "entity": "airline-task-26",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"service_request_status\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"service_request_status\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_service_request_status\",\"field_id\":\"service_request_status\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "service_request_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "service_request_status",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_service_request_status",
+                "field_id": "service_request_status"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      },
+      {
+        "scenario_id": "rl:2b2b8ac06e4903c4",
+        "base_task_id": "car-bench:car:base_24",
+        "macro_domain": "workflow",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "get_sunroof_and_sunshade_position": {},
+          "workflow_record_status": "validated"
+        },
+        "final_belief_slots": [
+          {
+            "id": "get_sunroof_and_sunshade_position",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700005278,
+            "valid_from": null,
+            "entity": "cal_6066"
+          },
+          {
+            "id": "workflow_record_status",
+            "value": "validated",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700005282,
+            "valid_from": 1700005282,
+            "entity": "cal_6066"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "calendar",
+              "entity": "cal_6066"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700005278,
+            "valid_from": 1700005278,
+            "entity": "cal_6066"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "get_sunroof_and_sunshade_position": "verify_get_sunroof_and_sunshade_position"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700005278,
+            "valid_from": 1700005278,
+            "entity": "cal_6066"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "get_sunroof_and_sunshade_position",
+              "value": {},
+              "source": "unverified_channel",
+              "entity": "cal_6066",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "get_sunroof_and_sunshade_position",
+              "value": {
+                "day": 26,
+                "location_or_poi_id": "loc_lux_222378",
+                "month": 2,
+                "time_hour_24hformat": 17,
+                "time_minutes": 15
+              },
+              "source": "official_api",
+              "entity": "cal_8382",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "workflow_record_status",
+              "value": "validated",
+              "source": "official_api",
+              "entity": "cal_6066",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"workflow_record_status\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"workflow_record_status\",\"value\":\"validated\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "workflow_record_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "workflow_record_status",
+                  "value": "validated"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "workflow_record_status",
+              "value": "invalid",
+              "source": "cached_replica",
+              "entity": "cal_6066",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"workflow_record_status\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"workflow_record_status\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_workflow_record_status\",\"field_id\":\"workflow_record_status\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "workflow_record_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "workflow_record_status",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_workflow_record_status",
+                "field_id": "workflow_record_status"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "sft_adapter_sha256": "79407496c1a8a51bcef9eaa910a5158e4d450952689ce9b08462e6073c03672b",
+    "base_model_fingerprint": "312805d62be174cd77a466537a574ac393c3f3654fdf5a221c50acb5ab90e492",
+    "stage1_dev_sha256": "fa23caf9fdce7091e00fff7a60fb3b32a2af1f5385717939f84b1c2ff50e8a36",
+    "stage2_dev_sha256": "31fa39ec8b0956247e2564b3604c8ddf9978bfe46e1449893a7b52977421e58c"
+  }
+}

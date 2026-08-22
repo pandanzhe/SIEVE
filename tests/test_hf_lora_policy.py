@@ -44,14 +44,13 @@ class HFLoraPolicyTests(unittest.TestCase):
     def test_all_structured_heads_anchor_the_ddp_graph_without_changing_loss(self) -> None:
         result = {
             "decision_logits": _FakeLogits(1.0),
-            "affected_logits": _FakeLogits(2.0),
-            "verification_logits": _FakeLogits(3.0),
-            "patch_operation_logits": _FakeLogits(4.0),
+            "structure_loss": 2.0,
+            "value_loss": 3.0,
         }
 
         anchors = _ddp_zero_loss_anchors(result)
 
-        self.assertEqual(anchors, [0.0, 0.0, 0.0, 0.0])
+        self.assertEqual(anchors, [0.0, 0.0, 0.0])
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ class HFSFTConfigTests(unittest.TestCase):
 
         config = parse_hf_sft_config(raw, ROOT)
 
-        self.assertEqual(config.model.path, ROOT / "model")
+        self.assertEqual(config.model.path, ROOT / "model" / "Qwen3-4B")
         self.assertEqual(config.model.dtype, "bfloat16")
         self.assertFalse(config.model.enable_thinking)
         self.assertEqual(config.lora.rank, 16)

@@ -85,6 +85,7 @@ class HFGRPOConfigTests(unittest.TestCase):
             self.assertEqual(config.model.dtype, "bfloat16")
             self.assertTrue(config.paths.train_file.is_absolute())
             self.assertEqual(config.constraints["invalid_format"], 0.02)
+            self.assertIsNone(config.train.eval_scenario_limit)
             self.assertEqual(
                 config.expected_split_counts,
                 {"train": 1600, "dev": 200, "test": 300},
@@ -97,12 +98,21 @@ class HFGRPOConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_hf_grpo_config(raw, Path(directory))
 
-    def test_config_rejects_warped_sampling_for_on_policy_ratios(self) -> None:
+    def test_config_accepts_exploratory_sampling(self) -> None:
         raw = _config()
-        raw["rollout"]["temperature"] = 0.8
+        raw["rollout"]["temperature"] = 1.2
+        raw["rollout"]["top_p"] = 0.95
         with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(ValueError):
-                parse_hf_grpo_config(raw, Path(directory))
+            config = parse_hf_grpo_config(raw, Path(directory))
+        self.assertEqual(config.rollout.temperature, 1.2)
+        self.assertEqual(config.rollout.top_p, 0.95)
+
+    def test_config_accepts_eval_scenario_limit(self) -> None:
+        raw = _config()
+        raw["train"]["eval_scenario_limit"] = 20
+        with tempfile.TemporaryDirectory() as directory:
+            config = parse_hf_grpo_config(raw, Path(directory))
+        self.assertEqual(config.train.eval_scenario_limit, 20)
 
     def test_group_advantages_are_normalized_within_each_group(self) -> None:
         advantages = grouped_advantages(

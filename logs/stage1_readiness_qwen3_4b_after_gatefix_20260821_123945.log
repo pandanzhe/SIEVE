@@ -1,0 +1,762 @@
+nohup: ignoring input
+[readiness] load policy start model=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/model/Qwen3-4B checkpoint=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage1-qwen3-4b/best
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:01,  1.45it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:01<00:00,  1.21it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:01<00:00,  1.82it/s]
+[readiness] load policy done device=cuda:0 samples=300 decision_counts={'UPDATE': 100, 'HOLD': 100, 'IGNORE': 100}
+[readiness] SFT dev free-generation start samples=300
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[readiness] SFT dev free-generation 1/300 progress=0.33% elapsed=2s eta=13m21s
+[readiness] SFT dev free-generation 10/300 progress=3.33% elapsed=18s eta=8m57s
+[readiness] SFT dev free-generation 20/300 progress=6.67% elapsed=36s eta=8m33s
+[readiness] SFT dev free-generation 30/300 progress=10.00% elapsed=53s eta=8m05s
+[readiness] SFT dev free-generation 40/300 progress=13.33% elapsed=1m14s eta=8m01s
+[readiness] SFT dev free-generation 50/300 progress=16.67% elapsed=1m32s eta=7m40s
+[readiness] SFT dev free-generation 60/300 progress=20.00% elapsed=1m48s eta=7m14s
+[readiness] SFT dev free-generation 70/300 progress=23.33% elapsed=2m07s eta=6m57s
+[readiness] SFT dev free-generation 80/300 progress=26.67% elapsed=2m27s eta=6m45s
+[readiness] SFT dev free-generation 90/300 progress=30.00% elapsed=2m44s eta=6m22s
+[readiness] SFT dev free-generation 100/300 progress=33.33% elapsed=3m01s eta=6m03s
+[readiness] SFT dev free-generation 110/300 progress=36.67% elapsed=3m20s eta=5m46s
+[readiness] SFT dev free-generation 120/300 progress=40.00% elapsed=3m39s eta=5m29s
+[readiness] SFT dev free-generation 130/300 progress=43.33% elapsed=3m57s eta=5m10s
+[readiness] SFT dev free-generation 140/300 progress=46.67% elapsed=4m15s eta=4m51s
+[readiness] SFT dev free-generation 150/300 progress=50.00% elapsed=4m32s eta=4m32s
+[readiness] SFT dev free-generation 160/300 progress=53.33% elapsed=4m52s eta=4m15s
+[readiness] SFT dev free-generation 170/300 progress=56.67% elapsed=5m10s eta=3m57s
+[readiness] SFT dev free-generation 180/300 progress=60.00% elapsed=5m26s eta=3m37s
+[readiness] SFT dev free-generation 190/300 progress=63.33% elapsed=5m45s eta=3m20s
+[readiness] SFT dev free-generation 200/300 progress=66.67% elapsed=6m06s eta=3m03s
+[readiness] SFT dev free-generation 210/300 progress=70.00% elapsed=6m23s eta=2m44s
+[readiness] SFT dev free-generation 220/300 progress=73.33% elapsed=6m41s eta=2m25s
+[readiness] SFT dev free-generation 230/300 progress=76.67% elapsed=7m00s eta=2m07s
+[readiness] SFT dev free-generation 240/300 progress=80.00% elapsed=7m19s eta=1m49s
+[readiness] SFT dev free-generation 250/300 progress=83.33% elapsed=7m37s eta=1m31s
+[readiness] SFT dev free-generation 260/300 progress=86.67% elapsed=7m55s eta=1m13s
+[readiness] SFT dev free-generation 270/300 progress=90.00% elapsed=8m12s eta=54s
+[readiness] SFT dev free-generation 280/300 progress=93.33% elapsed=8m33s eta=36s
+[readiness] SFT dev free-generation 290/300 progress=96.67% elapsed=8m51s eta=18s
+[readiness] SFT dev free-generation 300/300 progress=100.00% elapsed=9m08s eta=0s
+[readiness] SFT dev free-generation done parse_rate=1.0000 executable_rate=1.0000 decision_macro_f1=1.0000 full_action_exact_match=1.0000
+[readiness] GRPO group probe start scenarios=8 group_size=4
+[readiness] GRPO group probe 1/8 progress=12.50% elapsed=28s eta=3m22s
+[readiness] GRPO group probe 5/8 progress=62.50% elapsed=2m23s eta=1m26s
+[readiness] GRPO group probe 8/8 progress=100.00% elapsed=3m34s eta=0s
+[readiness] GRPO group probe done group_reward_variance=0.021159
+[readiness] stage2 closed-loop start scenarios=100
+[readiness] stage2 closed-loop 1/100 progress=1.00% elapsed=6s eta=11m10s
+[readiness] stage2 closed-loop 10/100 progress=10.00% elapsed=59s eta=8m55s
+[readiness] stage2 closed-loop 20/100 progress=20.00% elapsed=2m02s eta=8m10s
+[readiness] stage2 closed-loop 30/100 progress=30.00% elapsed=3m05s eta=7m13s
+[readiness] stage2 closed-loop 40/100 progress=40.00% elapsed=4m09s eta=6m14s
+[readiness] stage2 closed-loop 50/100 progress=50.00% elapsed=5m07s eta=5m07s
+[readiness] stage2 closed-loop 60/100 progress=60.00% elapsed=6m05s eta=4m03s
+[readiness] stage2 closed-loop 70/100 progress=70.00% elapsed=7m16s eta=3m06s
+[readiness] stage2 closed-loop 80/100 progress=80.00% elapsed=8m20s eta=2m05s
+[readiness] stage2 closed-loop 90/100 progress=90.00% elapsed=9m27s eta=1m03s
+[readiness] stage2 closed-loop 100/100 progress=100.00% elapsed=10m33s eta=0s
+[readiness] stage2 closed-loop done success_rate=0.0000 parse_rate=1.0000 false_update_rate=0.0025
+{
+  "ready_for_stage2": true,
+  "failures": {},
+  "sample_count": 300,
+  "sample_decision_counts": {
+    "UPDATE": 100,
+    "HOLD": 100,
+    "IGNORE": 100
+  },
+  "probe_scenarios": 8,
+  "closed_loop_scenarios": 100,
+  "metrics": {
+    "parse_rate": 1.0,
+    "executable_rate": 1.0,
+    "decision_macro_f1": 1.0,
+    "decision_accuracy": 1.0,
+    "false_update_rate": 0.0,
+    "full_action_exact_match": 1.0,
+    "patch_value_exact_match": 1.0,
+    "group_reward_variance": 0.021159080731444214,
+    "closed_loop_success_rate": 0.0,
+    "closed_loop_parse_rate": 1.0,
+    "closed_loop_false_update_rate": 0.0025,
+    "closed_loop_verification_rate": 0.0,
+    "closed_loop_stall_rate": 0.2125,
+    "closed_loop_invalid_patch_rate": 0.0,
+    "closed_loop_mean_return": 0.06197049669999998,
+    "closed_loop_failure_traces": [
+      {
+        "scenario_id": "rl:012d05dd50585a9c",
+        "base_task_id": "tau3-bench:tau3:retail:79",
+        "macro_domain": "commerce",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "fulfillment_readiness": "ready",
+          "item_ids": [
+            "3453331371"
+          ]
+        },
+        "final_belief_slots": [
+          {
+            "id": "item_ids",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700000231,
+            "valid_from": null,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "fulfillment_readiness",
+            "value": "ready",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700000235,
+            "valid_from": 1700000235,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "retail",
+              "entity": "#W8661412"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000231,
+            "valid_from": 1700000231,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "item_ids": "verify_item_ids"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000231,
+            "valid_from": 1700000231,
+            "entity": "#W8661412"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "item_ids",
+              "value": [
+                "3453331371"
+              ],
+              "source": "unverified_channel",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "item_ids",
+              "value": "Isabella",
+              "source": "official_api",
+              "entity": "retail-task-26",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "ready",
+              "source": "official_api",
+              "entity": "#W8661412",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"fulfillment_readiness\",\"value\":\"ready\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "fulfillment_readiness",
+                  "value": "ready"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "not_ready",
+              "source": "cached_replica",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"fulfillment_readiness\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_fulfillment_readiness\",\"field_id\":\"fulfillment_readiness\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "fulfillment_readiness",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_fulfillment_readiness",
+                "field_id": "fulfillment_readiness"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      },
+      {
+        "scenario_id": "rl:03b5d294b04584f0",
+        "base_task_id": "tau3-bench:tau3:retail:79",
+        "macro_domain": "commerce",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "fulfillment_readiness": "ready",
+          "item_ids": [
+            "3453331371"
+          ]
+        },
+        "final_belief_slots": [
+          {
+            "id": "item_ids",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700000241,
+            "valid_from": null,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "fulfillment_readiness",
+            "value": "ready",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700000245,
+            "valid_from": 1700000245,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "retail",
+              "entity": "#W8661412"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000241,
+            "valid_from": 1700000241,
+            "entity": "#W8661412"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "item_ids": "verify_item_ids"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700000241,
+            "valid_from": 1700000241,
+            "entity": "#W8661412"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "item_ids",
+              "value": [
+                "3453331371"
+              ],
+              "source": "unverified_channel",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "item_ids",
+              "value": "Daiki",
+              "source": "official_api",
+              "entity": "retail-task-47",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "ready",
+              "source": "official_api",
+              "entity": "#W8661412",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"fulfillment_readiness\",\"value\":\"ready\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "fulfillment_readiness",
+                  "value": "ready"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "fulfillment_readiness",
+              "value": "not_ready",
+              "source": "cached_replica",
+              "entity": "#W8661412",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"fulfillment_readiness\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"fulfillment_readiness\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_fulfillment_readiness\",\"field_id\":\"fulfillment_readiness\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "fulfillment_readiness"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "fulfillment_readiness",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_fulfillment_readiness",
+                "field_id": "fulfillment_readiness"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      },
+      {
+        "scenario_id": "rl:0539078d2b326010",
+        "base_task_id": "car-bench:car:disambiguation_38",
+        "macro_domain": "workflow",
+        "success": false,
+        "episode_return": 0.0,
+        "oracle_state": {
+          "set_climate_temperature": {
+            "seat_zone": "DRIVER",
+            "temperature": 24
+          },
+          "workflow_record_status": "validated"
+        },
+        "final_belief_slots": [
+          {
+            "id": "set_climate_temperature",
+            "value": null,
+            "status": "empty",
+            "source": "initial_state",
+            "observed_at": 1700005305,
+            "valid_from": null,
+            "entity": "cal_9314"
+          },
+          {
+            "id": "workflow_record_status",
+            "value": "validated",
+            "status": "pending_verification",
+            "source": "official_api",
+            "observed_at": 1700005309,
+            "valid_from": 1700005309,
+            "entity": "cal_9314"
+          },
+          {
+            "id": "__task_scope",
+            "value": {
+              "domain": "calendar",
+              "entity": "cal_9314"
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700005305,
+            "valid_from": 1700005305,
+            "entity": "cal_9314"
+          },
+          {
+            "id": "__verification_policy",
+            "value": {
+              "required_authority": "primary_record",
+              "tool_by_field": {
+                "set_climate_temperature": "verify_set_climate_temperature"
+              }
+            },
+            "status": "trusted",
+            "source": "scenario_definition",
+            "observed_at": 1700005305,
+            "valid_from": 1700005305,
+            "entity": "cal_9314"
+          }
+        ],
+        "steps": [
+          {
+            "step_index": 0,
+            "event_kind": "ambiguous",
+            "observation": {
+              "field_id": "set_climate_temperature",
+              "value": {
+                "seat_zone": "DRIVER",
+                "temperature": 24
+              },
+              "source": "unverified_channel",
+              "entity": "cal_9314",
+              "source_authority": "secondary_report",
+              "authenticated": false
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 1,
+            "event_kind": "wrong_entity",
+            "observation": {
+              "field_id": "set_climate_temperature",
+              "value": {},
+              "source": "official_api",
+              "entity": "cal_4165",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"IGNORE\",\"affected_fields\":[],\"patches\":[],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "IGNORE",
+              "affected_fields": [],
+              "patches": [],
+              "verification": null
+            },
+            "reward": 0.0,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 2,
+            "event_kind": "authoritative",
+            "observation": {
+              "field_id": "workflow_record_status",
+              "value": "validated",
+              "source": "official_api",
+              "entity": "cal_9314",
+              "source_authority": "primary_record",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"UPDATE\",\"affected_fields\":[\"workflow_record_status\"],\"patches\":[{\"op\":\"SET_VALUE\",\"field_id\":\"workflow_record_status\",\"value\":\"validated\"}],\"verification\":null}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "UPDATE",
+              "affected_fields": [
+                "workflow_record_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_VALUE",
+                  "field_id": "workflow_record_status",
+                  "value": "validated"
+                }
+              ],
+              "verification": null
+            },
+            "reward": 0.485,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 0.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "next_event",
+            "executor_error": null,
+            "verification_error": null
+          },
+          {
+            "step_index": 3,
+            "event_kind": "stale_conflict",
+            "observation": {
+              "field_id": "workflow_record_status",
+              "value": "invalid",
+              "source": "cached_replica",
+              "entity": "cal_9314",
+              "source_authority": "secondary_report",
+              "authenticated": true
+            },
+            "raw_completion": "{\"decision\":\"HOLD\",\"affected_fields\":[\"workflow_record_status\"],\"patches\":[{\"op\":\"SET_STATUS\",\"field_id\":\"workflow_record_status\",\"value\":\"pending_verification\"}],\"verification\":{\"tool\":\"verify_workflow_record_status\",\"field_id\":\"workflow_record_status\"}}",
+            "parsed": true,
+            "parse_error": null,
+            "action": {
+              "decision": "HOLD",
+              "affected_fields": [
+                "workflow_record_status"
+              ],
+              "patches": [
+                {
+                  "op": "SET_STATUS",
+                  "field_id": "workflow_record_status",
+                  "value": "pending_verification"
+                }
+              ],
+              "verification": {
+                "tool": "verify_workflow_record_status",
+                "field_id": "workflow_record_status"
+              }
+            },
+            "reward": -0.5,
+            "costs": {
+              "false_update": 0.0,
+              "unsafe_action": 0.0,
+              "verification": 0.0,
+              "stall": 1.0,
+              "invalid_format": 0.0,
+              "invalid_patch": 0.0,
+              "collateral_edit": 0.0,
+              "budget_violation": 0.0
+            },
+            "transition": "terminal",
+            "executor_error": null,
+            "verification_error": null
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "sft_adapter_sha256": "79407496c1a8a51bcef9eaa910a5158e4d450952689ce9b08462e6073c03672b",
+    "base_model_fingerprint": "312805d62be174cd77a466537a574ac393c3f3654fdf5a221c50acb5ab90e492",
+    "stage1_dev_sha256": "fa23caf9fdce7091e00fff7a60fb3b32a2af1f5385717939f84b1c2ff50e8a36",
+    "stage2_dev_sha256": "31fa39ec8b0956247e2564b3604c8ddf9978bfe46e1449893a7b52977421e58c"
+  }
+}

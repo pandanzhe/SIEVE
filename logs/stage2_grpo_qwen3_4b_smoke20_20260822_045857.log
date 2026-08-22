@@ -1,0 +1,16 @@
+nohup: ignoring input
+Detected kernel version 5.4.210, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 32.06it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 29.28it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 29.20it/s]
+[stage2] run initialized run_id=20260822_045919 output_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b run_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b/runs/20260822_045919
+[stage2] iter=1/20 lr=5.000e-06 return=0.2063 score=0.2063 success=0.1250 parse=0.9091 reward_var=0.893414 policy_loss=-0.097348 kl=0.027181 false_update=0.0000 stall=0.1250
+[stage2] iter=2/20 lr=4.966e-06 return=0.1904 score=0.1809 success=0.2500 parse=0.9038 reward_var=1.846990 policy_loss=-0.121954 kl=0.004150 false_update=0.0000 stall=0.3125
+[stage2] iter=3/20 lr=4.865e-06 return=0.4712 score=0.4701 success=0.1875 parse=1.0000 reward_var=1.037325 policy_loss=-0.217946 kl=0.004898 false_update=0.0625 stall=0.0625
+[stage2] iter=4/20 lr=4.699e-06 return=0.3006 score=0.2850 success=0.2500 parse=0.9344 reward_var=1.549719 policy_loss=-0.192671 kl=0.007334 false_update=0.0000 stall=0.1875
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[stage2] iter=5/20 lr=4.473e-06 return=0.9367 score=0.9217 success=0.5000 parse=1.0000 reward_var=2.321912 policy_loss=-0.163961 kl=0.013784 false_update=0.0000 stall=0.6250
+[stage2] iter=6/20 lr=4.193e-06 return=1.2262 score=1.1922 success=0.5625 parse=1.0000 reward_var=0.978460 policy_loss=-0.177358 kl=0.005701 false_update=0.0000 stall=0.4375
+[stage2] iter=7/20 lr=3.867e-06 return=0.8225 score=0.7995 success=0.3750 parse=1.0000 reward_var=1.847863 policy_loss=-0.173097 kl=0.017319 false_update=0.0625 stall=0.2500
+[stage2] iter=8/20 lr=3.504e-06 return=1.5100 score=1.4994 success=0.6250 parse=0.9851 reward_var=1.621614 policy_loss=-0.160835 kl=0.059599 false_update=0.0625 stall=0.0625
+[stage2] iter=9/20 lr=3.114e-06 return=0.5438 score=0.4596 success=0.3125 parse=1.0000 reward_var=1.498098 policy_loss=-0.157751 kl=0.038319 false_update=0.0000 stall=0.7500

@@ -34,6 +34,23 @@ def potential_difference(
     )
 
 
+def oracle_gap(
+    state: BeliefState, oracle: Mapping[str, object], dependent_fields: Sequence[str]
+) -> float:
+    if not dependent_fields:
+        return 0.0
+    gap = 0.0
+    for field_id in dependent_fields:
+        slot = state.get(field_id)
+        if slot is None:
+            gap += 1.0
+        elif slot.status is not SlotStatus.TRUSTED:
+            gap += 0.75
+        elif field_id not in oracle or slot.value != oracle[field_id]:
+            gap += 1.0
+    return gap / len(dependent_fields)
+
+
 def zero_costs() -> dict[str, float]:
     return {
         "false_update": 0.0,

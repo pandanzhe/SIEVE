@@ -1,0 +1,57 @@
+nohup: ignoring input
+{
+  "split_counts": {
+    "train": 1600,
+    "dev": 200,
+    "test": 300
+  },
+  "expected_split_counts": {
+    "train": 1600,
+    "dev": 200,
+    "test": 300
+  },
+  "split_count_mismatches": 0,
+  "split_sha256": {
+    "train": "cb922ce55226331652e5f5be50b6bbc88f301d7cff957e27c52e8eb921bc696e",
+    "dev": "31fa39ec8b0956247e2564b3604c8ddf9978bfe46e1449893a7b52977421e58c",
+    "test": "19fdb280890e1ebc200cd632de3b835f2d47144d1a81346cf9ca1669b832edaa"
+  },
+  "base_task_overlap": 0,
+  "duplicate_scenario_ids": 0,
+  "distractor_split_violations": 0,
+  "missing_distractor_provenance": 0,
+  "wrong_split_labels": 0,
+  "target_leaks": 0,
+  "missing_private_blocks": 0,
+  "event_contract_errors": 0,
+  "manifest_path": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/data/rl/manifest.json",
+  "manifest_matches_files": true,
+  "model_path": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/model/Qwen3-4B",
+  "model_ready": true,
+  "sft_checkpoint": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage1-qwen3-4b/best",
+  "sft_adapter_ready": true,
+  "sft_adapter_sha256": "79407496c1a8a51bcef9eaa910a5158e4d450952689ce9b08462e6073c03672b",
+  "readiness_report": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage1-qwen3-4b/readiness.json",
+  "readiness_report_present": true,
+  "readiness_report_matches_artifacts": true,
+  "stage1_readiness_gate_passed": true,
+  "ready_for_stage2": true,
+  "dependencies": {
+    "torch": {
+      "installed": true,
+      "version": "2.7.1"
+    },
+    "transformers": {
+      "installed": true,
+      "version": "4.57.1"
+    },
+    "peft": {
+      "installed": true,
+      "version": "0.18.0"
+    },
+    "accelerate": {
+      "installed": true,
+      "version": "1.12.0"
+    }
+  }
+}

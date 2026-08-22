@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -28,6 +29,67 @@ from .hf_grpo import (
     load_stage1_policy,
 )
 from .hf_grpo_config import HFGRPOConfig
+
+
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{seconds:02d}s"
+    if minutes:
+        return f"{minutes}m{seconds:02d}s"
+    return f"{seconds}s"
+
+
+def _progress(prefix: str, current: int, total: int, started_at: float) -> None:
+    elapsed = time.time() - started_at
+    progress = current / max(total, 1)
+    eta = elapsed / progress - elapsed if progress > 0 else 0.0
+    print(
+        f"[readiness] {prefix} {current}/{total} "
+        f"progress={progress:.2%} elapsed={_format_seconds(elapsed)} "
+        f"eta={_format_seconds(eta)}",
+        flush=True,
+    )
+
+
+def _select_stratified_sft_records(
+    records: Sequence[SFTRecord], max_samples: int
+) -> list[SFTRecord]:
+    """Keep small readiness runs representative across UPDATE/HOLD/IGNORE."""
+    if max_samples >= len(records):
+        return list(records)
+    buckets: dict[Decision, list[SFTRecord]] = {decision: [] for decision in Decision}
+    for record in records:
+        buckets[record.target.decision].append(record)
+    non_empty = [decision for decision, bucket in buckets.items() if bucket]
+    if not non_empty:
+        return list(records[:max_samples])
+
+    selected: list[SFTRecord] = []
+    positions = {decision: 0 for decision in non_empty}
+    while len(selected) < max_samples:
+        made_progress = False
+        for decision in non_empty:
+            bucket = buckets[decision]
+            position = positions[decision]
+            if position < len(bucket):
+                selected.append(bucket[position])
+                positions[decision] = position + 1
+                made_progress = True
+                if len(selected) >= max_samples:
+                    break
+        if not made_progress:
+            break
+    return selected
+
+
+def _decision_counts(records: Sequence[SFTRecord]) -> dict[str, int]:
+    counts = {decision.value: 0 for decision in Decision}
+    for record in records:
+        counts[record.target.decision.value] += 1
+    return counts
 
 
 def evaluate_generated_actions(
@@ -90,28 +152,159 @@ def _greedy_closed_loop_metrics(
     device: Any,
     *,
     scenario_count: int,
-) -> dict[str, float]:
+    trace_limit: int = 3,
+) -> dict[str, Any]:
     scenarios = read_scenarios(config.paths.dev_file)
     if not scenarios:
         raise ValueError("Stage-2 dev file contains no scenarios")
     count = min(scenario_count, len(scenarios))
     indices = [index * len(scenarios) // count for index in range(count)]
     totals = np.zeros(10, dtype=np.float64)
+    failure_traces: list[dict[str, Any]] = []
+    print(
+        f"[readiness] stage2 closed-loop start scenarios={count}",
+        flush=True,
+    )
+    started_at = time.time()
     for order, index in enumerate(indices):
-        totals += _evaluate_local_scenario(
+        scenario = scenarios[index]
+        values, trace = _evaluate_local_scenario_with_trace(
             policy,
             tokenizer,
-            scenarios[index],
+            scenario,
             config,
             device,
             config.seed + order * 100,
         )
+        totals += values
+        if not trace["success"] and len(failure_traces) < trace_limit:
+            failure_traces.append(trace)
+        if order == 0 or (order + 1) % 10 == 0 or order + 1 == count:
+            _progress("stage2 closed-loop", order + 1, count, started_at)
     metrics = totals_to_metrics(totals)
+    print(
+        "[readiness] stage2 closed-loop done "
+        f"success_rate={metrics['success_rate']:.4f} "
+        f"parse_rate={metrics['parse_rate']:.4f} "
+        f"false_update_rate={metrics['false_update_rate']:.4f}",
+        flush=True,
+    )
     return {
         "closed_loop_success_rate": metrics["success_rate"],
         "closed_loop_parse_rate": metrics["parse_rate"],
         "closed_loop_false_update_rate": metrics["false_update_rate"],
+        "closed_loop_verification_rate": metrics["verification_rate"],
+        "closed_loop_stall_rate": metrics["stall_rate"],
+        "closed_loop_invalid_patch_rate": metrics["invalid_patch_rate"],
         "closed_loop_mean_return": metrics["mean_return"],
+        "closed_loop_failure_traces": failure_traces,
+    }
+
+
+def _slot_payload(slot: Any) -> dict[str, Any]:
+    return {
+        "id": slot.id,
+        "value": slot.value,
+        "status": slot.status.value,
+        "source": slot.source,
+        "observed_at": slot.observed_at,
+        "valid_from": slot.valid_from,
+        "entity": slot.entity,
+    }
+
+
+def _output_payload(output: Any) -> dict[str, Any]:
+    return revision_output_payload(output)
+
+
+def _evaluate_local_scenario_with_trace(
+    policy: Any,
+    tokenizer: Any,
+    scenario: Any,
+    config: HFGRPOConfig,
+    device: Any,
+    seed: int,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    environment = ScenarioRevisionEnvironment([scenario], gamma=config.train.gamma)
+    context = environment.reset(scenario.scenario_id, seed)
+    values = np.zeros(10, dtype=np.float64)
+    episode_return = 0.0
+    discount = 1.0
+    steps: list[dict[str, Any]] = []
+    success = False
+    for step_index in range(config.rollout.max_episode_steps):
+        prompt = render_context_prompt(
+            tokenizer, context, enable_thinking=config.model.enable_thinking
+        )
+        _ids, _start, text = _generate_completion(
+            policy,
+            tokenizer,
+            prompt,
+            config,
+            device,
+            seed + step_index,
+            greedy=True,
+        )
+        output, valid, error = safe_parse_revision_output(text)
+        transition = environment.step(
+            output,
+            invalid_format=not valid,
+            token_cost=int(_ids.numel()) - _start,
+        )
+        episode_return += discount * transition.reward
+        discount *= config.train.gamma
+        values[3] += 1.0
+        values[4] += float(valid)
+        values[5] += transition.costs.get("false_update", 0.0)
+        values[6] += transition.costs.get("invalid_format", 0.0)
+        values[7] += transition.costs.get("verification", 0.0)
+        values[8] += transition.costs.get("stall", 0.0)
+        values[9] += transition.costs.get("invalid_patch", 0.0)
+        steps.append(
+            {
+                "step_index": step_index,
+                "event_kind": transition.info.get("event_kind"),
+                "observation": {
+                    "field_id": context.observation.field_id,
+                    "value": context.observation.value,
+                    "source": context.observation.source,
+                    "entity": context.observation.entity,
+                    "source_authority": context.observation.source_authority,
+                    "authenticated": context.observation.authenticated,
+                },
+                "raw_completion": text,
+                "parsed": valid,
+                "parse_error": error,
+                "action": _output_payload(output),
+                "reward": transition.reward,
+                "costs": transition.costs,
+                "transition": transition.info.get("transition"),
+                "executor_error": transition.info.get("executor_error"),
+                "verification_error": transition.info.get("verification_error"),
+            }
+        )
+        if transition.terminated:
+            success = bool(transition.info["success"])
+            values[1] = float(success)
+            break
+        if transition.next_context is None:
+            raise RuntimeError("non-terminal Stage-2 evaluation step has no context")
+        context = transition.next_context
+    values[0] = 1.0
+    values[2] = episode_return
+    final_state = [
+        _slot_payload(slot)
+        for slot in (environment._state.slots if environment._state is not None else [])
+    ]
+    return values, {
+        "scenario_id": scenario.scenario_id,
+        "base_task_id": scenario.base_task_id,
+        "macro_domain": scenario.macro_domain,
+        "success": success,
+        "episode_return": episode_return,
+        "oracle_state": scenario.oracle_state,
+        "final_belief_slots": final_state,
+        "steps": steps,
     }
 
 
@@ -125,6 +318,12 @@ def _probe_group_variance(
 ) -> float:
     scenarios = read_scenarios(config.paths.dev_file)[:scenario_count]
     variances: list[float] = []
+    print(
+        f"[readiness] GRPO group probe start scenarios={len(scenarios)} "
+        f"group_size={config.rollout.group_size}",
+        flush=True,
+    )
+    started_at = time.time()
     for scenario_index, scenario in enumerate(scenarios):
         scores: list[float] = []
         for sample_index in range(config.rollout.group_size):
@@ -174,7 +373,23 @@ def _probe_group_variance(
                 context = transition.next_context
             scores.append(score)
         variances.append(float(np.var(scores)))
-    return float(np.mean(variances)) if variances else 0.0
+        if (
+            scenario_index == 0
+            or (scenario_index + 1) % 5 == 0
+            or scenario_index + 1 == len(scenarios)
+        ):
+            _progress(
+                "GRPO group probe",
+                scenario_index + 1,
+                len(scenarios),
+                started_at,
+            )
+    value = float(np.mean(variances)) if variances else 0.0
+    print(
+        f"[readiness] GRPO group probe done group_reward_variance={value:.6f}",
+        flush=True,
+    )
+    return value
 
 
 def run_stage1_readiness(
@@ -194,14 +409,31 @@ def run_stage1_readiness(
     if max_samples <= 0 or probe_scenarios <= 0 or closed_loop_scenarios <= 0:
         raise ValueError("readiness sample counts must be positive")
 
-    records = read_jsonl(config.paths.stage1_dev_file)[:max_samples]
-    if not records:
+    all_records = read_jsonl(config.paths.stage1_dev_file)
+    if not all_records:
         raise ValueError("Stage-1 dev file contains no records")
+    records = _select_stratified_sft_records(all_records, max_samples)
+    decision_counts = _decision_counts(records)
+    print(
+        "[readiness] load policy start "
+        f"model={config.paths.model_path} checkpoint={config.paths.sft_checkpoint}",
+        flush=True,
+    )
     policy, tokenizer = load_stage1_policy(config, is_trainable=False)
     device = torch.device("cuda:0")
     policy.to(device)
     policy.eval()
+    print(
+        f"[readiness] load policy done device={device} samples={len(records)} "
+        f"decision_counts={decision_counts}",
+        flush=True,
+    )
     completions: list[str] = []
+    print(
+        f"[readiness] SFT dev free-generation start samples={len(records)}",
+        flush=True,
+    )
+    started_at = time.time()
     for index, record in enumerate(records):
         prompt = render_context_prompt(
             tokenizer,
@@ -218,7 +450,17 @@ def run_stage1_readiness(
             greedy=True,
         )
         completions.append(text)
+        if index == 0 or (index + 1) % 10 == 0 or index + 1 == len(records):
+            _progress("SFT dev free-generation", index + 1, len(records), started_at)
     metrics = evaluate_generated_actions(completions, records)
+    print(
+        "[readiness] SFT dev free-generation done "
+        f"parse_rate={metrics['parse_rate']:.4f} "
+        f"executable_rate={metrics['executable_rate']:.4f} "
+        f"decision_macro_f1={metrics['decision_macro_f1']:.4f} "
+        f"full_action_exact_match={metrics['full_action_exact_match']:.4f}",
+        flush=True,
+    )
     metrics["group_reward_variance"] = _probe_group_variance(
         policy,
         tokenizer,
@@ -240,6 +482,7 @@ def run_stage1_readiness(
         "ready_for_stage2": ready,
         "failures": failures,
         "sample_count": len(records),
+        "sample_decision_counts": decision_counts,
         "probe_scenarios": probe_scenarios,
         "closed_loop_scenarios": min(
             closed_loop_scenarios, len(read_scenarios(config.paths.dev_file))

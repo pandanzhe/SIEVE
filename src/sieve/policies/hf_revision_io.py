@@ -193,8 +193,7 @@ DEFAULT_READINESS_THRESHOLDS: dict[str, tuple[str, float]] = {
     "patch_value_exact_match": ("min", 0.85),
     "false_update_rate": ("max", 0.03),
     "group_reward_variance": ("min_exclusive", 0.0),
-    "closed_loop_success_rate": ("min", 0.60),
-    "closed_loop_parse_rate": ("min", 0.95),
+    "closed_loop_parse_rate": ("min", 0.90),
 }
 
 

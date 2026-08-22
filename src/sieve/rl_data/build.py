@@ -18,11 +18,43 @@ from ..core.types import (
     RiskLevel,
     SlotStatus,
 )
+from ..data_factory.models import GroundedSourceRecord
+from ..data_factory.normalize import (
+    normalize_agentbench,
+    normalize_tau2,
+    normalize_toolbench,
+    normalize_webarena,
+)
 from .io import write_scenarios
 from .schema import RLScenario, ScenarioEvent
 
 SPLITS = ("train", "dev", "test")
 MACRO_QUOTAS = {"commerce": 0.5, "service": 0.3, "workflow": 0.2}
+SCENARIO_TEMPLATES = (
+    "no_auto_repair",
+    "delayed_contamination",
+    "multi_field_dependency",
+    "verification_budget_choice",
+    "complex_stale_conflict",
+)
+RAW_SOURCE_LIMITS = {
+    "tau2-bench": 1500,
+    "ToolBench": 800,
+    "AgentBench": 800,
+    "WebArena": 800,
+}
+RAW_SOURCE_VERSIONS = {
+    "tau2-bench": "1d244f5dca42944b67a379b44bfeb9f5748f189d",
+    "ToolBench": "d56fdd89faf8c91fa135090b212bb9057ee5cfc2",
+    "AgentBench": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+    "WebArena": "dce04686a56253aefba7b18a4fa0937cf1dc987b",
+}
+RAW_SOURCE_LICENSES = {
+    "tau2-bench": "MIT",
+    "ToolBench": "Apache-2.0",
+    "AgentBench": "Apache-2.0",
+    "WebArena": "Apache-2.0",
+}
 
 
 def split_base_task(base_task_id: str, seed: int) -> str:
@@ -50,6 +82,36 @@ def _read_jsonl(path: Path) -> Iterable[dict[str, Any]]:
             yield value
 
 
+def _context(row: Mapping[str, Any]) -> Mapping[str, Any]:
+    context = row.get("state") or row.get("context")
+    if not isinstance(context, Mapping):
+        raise ValueError("source row must contain state or context")
+    return context
+
+
+def _observation_from_row(row: Mapping[str, Any]) -> Mapping[str, Any]:
+    observation = _context(row).get("observation")
+    if not isinstance(observation, Mapping):
+        raise ValueError("source row context must contain observation")
+    return observation
+
+
+def _goal_from_row(row: Mapping[str, Any]) -> str:
+    return str(_context(row).get("goal", ""))
+
+
+def _risk_from_row(row: Mapping[str, Any]) -> Mapping[str, Any]:
+    risk = _context(row).get("risk", {})
+    return risk if isinstance(risk, Mapping) else {}
+
+
+def _domain_from_row(row: Mapping[str, Any]) -> str:
+    taxonomy = row.get("taxonomy", {})
+    if isinstance(taxonomy, Mapping) and taxonomy.get("domain"):
+        return str(taxonomy["domain"])
+    return str(row.get("domain", "other"))
+
+
 def _base_task_id(row: Mapping[str, Any]) -> str:
     provenance = row.get("provenance", {})
     dataset = str(provenance.get("source_dataset", "unknown"))
@@ -58,7 +120,7 @@ def _base_task_id(row: Mapping[str, Any]) -> str:
     source_id = str(
         provenance.get("source_record_id") or provenance.get("parent_record_id")
     )
-    field_id = str(row.get("state", {}).get("observation", {}).get("field_id", ""))
+    field_id = str(_observation_from_row(row).get("field_id", ""))
     suffix = f":{field_id}"
     if field_id and source_id.endswith(suffix):
         source_id = source_id[: -len(suffix)]
@@ -78,10 +140,11 @@ def _macro_domain(domain: str) -> str:
 
 def _eligible(row: Mapping[str, Any]) -> bool:
     target = row.get("target", {})
-    observation = row.get("state", {}).get("observation", {})
+    observation = _observation_from_row(row)
     validation = row.get("validation", {})
+    accepted = validation.get("accepted", True) if validation else True
     return bool(
-        validation.get("accepted")
+        accepted
         and target.get("decision") == "UPDATE"
         and target.get("patches")
         and observation.get("source_authority") == "primary_record"
@@ -110,13 +173,9 @@ def _observation(
     authenticated: bool,
     perturbation: str,
 ) -> Observation:
-    rendered = (
-        f"{source} reports {field_id} for {entity} as {value}; "
-        f"observed_at={timestamp}."
-    )
     return Observation(
         field_id=field_id,
-        value=rendered,
+        value=value,
         source=source,
         observed_at=timestamp,
         valid_from=timestamp,
@@ -134,7 +193,7 @@ def _distinct_field_rows(
 ) -> list[Mapping[str, Any]]:
     by_field: dict[str, Mapping[str, Any]] = {}
     for candidate in rows:
-        candidate_field = str(candidate["state"]["observation"]["field_id"])
+        candidate_field = str(_observation_from_row(candidate)["field_id"])
         by_field.setdefault(candidate_field, candidate)
     return [by_field[field] for field in sorted(by_field)]
 
@@ -148,19 +207,19 @@ def _ensure_two_task_fields(
             fields,
             key=lambda item: (
                 item.get("_stage2_stale_value") is not None,
-                str(item["state"]["observation"]["field_id"]),
+                str(_observation_from_row(item)["field_id"]),
             ),
         )
     source = fields[0]
     derived = deepcopy(dict(source))
-    domain = str(source.get("taxonomy", {}).get("domain", "other"))
+    domain = _domain_from_row(source)
     macro = _macro_domain(domain)
     field_id, value, stale_value = {
         "commerce": ("fulfillment_readiness", "ready", "not_ready"),
         "service": ("service_request_status", "confirmed", "unconfirmed"),
         "workflow": ("workflow_record_status", "validated", "invalid"),
     }[macro]
-    observation = derived["state"]["observation"]
+    observation = _observation_from_row(derived)
     observation["field_id"] = field_id
     observation["value"] = value
     observation["observed_at"] = int(observation["observed_at"]) + 5
@@ -181,25 +240,129 @@ def _ensure_two_task_fields(
     return [source, derived]
 
 
+def _raw_record_to_row(record: GroundedSourceRecord) -> dict[str, Any]:
+    provenance = record.provenance.to_dict()
+    provenance["parent_record_id"] = (
+        provenance.get("parent_record_id")
+        or f"{record.provenance.source_dataset}:{record.provenance.source_record_id}"
+    )
+    return {
+        "record_id": f"raw:{record.provenance.source_dataset}:{record.provenance.source_record_id}",
+        "group_id": f"{record.provenance.source_dataset}:{record.provenance.source_record_id}",
+        "provenance": provenance,
+        "taxonomy": {"domain": record.domain},
+        "state": {
+            "goal": record.goal,
+            "observation": {
+                "entity": record.entity,
+                "field_id": record.field_id,
+                "value": record.new_value,
+                "source": record.source,
+                "observed_at": record.observed_at,
+                "valid_from": record.valid_from,
+                "source_authority": "primary_record",
+                "authenticated": True,
+            },
+            "risk": {"risk": "medium", "reversible": True},
+        },
+        "observation_text": record.source_text,
+        "target": {
+            "decision": "UPDATE",
+            "affected_fields": [record.field_id],
+            "patches": [
+                {"op": "SET_VALUE", "field_id": record.field_id, "value": record.new_value}
+            ],
+            "verification": None,
+        },
+        "validation": {"accepted": True, "reason_codes": []},
+    }
+
+
+def _default_raw_dir(source: Path) -> Path | None:
+    for parent in (source.parent, *source.parents):
+        candidate = parent / "data" / "raw"
+        if (candidate / "manifest.json").is_file():
+            return candidate
+    return None
+
+
+def _load_raw_stage2_rows(raw_dir: str | Path | None) -> list[dict[str, Any]]:
+    if raw_dir is None:
+        return []
+    root = Path(raw_dir).resolve()
+    if not (root / "manifest.json").is_file():
+        return []
+
+    records: list[GroundedSourceRecord] = []
+    tau_root = root / "tau2-bench" / "data" / "tau2" / "domains"
+    for domain in ("retail", "airline", "telecom"):
+        path = tau_root / domain / "tasks.json"
+        if path.is_file():
+            records.extend(
+                normalize_tau2(
+                    path,
+                    RAW_SOURCE_VERSIONS["tau2-bench"],
+                    RAW_SOURCE_LICENSES["tau2-bench"],
+                    limit=max(1, RAW_SOURCE_LIMITS["tau2-bench"] // 3),
+                )
+            )
+
+    tool_root = root / "ToolBench" / "data_example" / "answer"
+    if tool_root.is_dir():
+        records.extend(
+            normalize_toolbench(
+                sorted(tool_root.glob("**/*.json")),
+                RAW_SOURCE_VERSIONS["ToolBench"],
+                RAW_SOURCE_LICENSES["ToolBench"],
+                limit=RAW_SOURCE_LIMITS["ToolBench"],
+            )
+        )
+
+    agent_path = root / "AgentBench" / "data" / "dbbench" / "standard.jsonl"
+    if agent_path.is_file():
+        records.extend(
+            normalize_agentbench(
+                agent_path,
+                RAW_SOURCE_VERSIONS["AgentBench"],
+                RAW_SOURCE_LICENSES["AgentBench"],
+                limit=RAW_SOURCE_LIMITS["AgentBench"],
+            )
+        )
+
+    web_path = root / "webarena" / "config_files" / "test.raw.json"
+    if web_path.is_file():
+        records.extend(
+            normalize_webarena(
+                web_path,
+                RAW_SOURCE_VERSIONS["WebArena"],
+                RAW_SOURCE_LICENSES["WebArena"],
+                limit=RAW_SOURCE_LIMITS["WebArena"],
+            )
+        )
+    return [_raw_record_to_row(record) for record in records]
+
+
 def _scenario_from_rows(
     rows: Sequence[Mapping[str, Any]],
     *,
     split: str,
     variant_id: int,
+    scenario_template: str,
     alternative_entity: str,
     alternative_value: Any,
     stale_value: Any,
     distractor_base_task_ids: tuple[str, ...],
 ) -> RLScenario:
+    if scenario_template not in SCENARIO_TEMPLATES:
+        raise ValueError(f"unknown scenario template: {scenario_template}")
     if not rows:
         raise ValueError("a scenario requires at least one task field")
     field_rows = _ensure_two_task_fields(rows)
     row = field_rows[0]
     secondary_row = field_rows[1]
-    state = row["state"]
-    raw_observation = state["observation"]
-    secondary_observation = secondary_row["state"]["observation"]
-    domain = str(row.get("taxonomy", {}).get("domain", "other"))
+    raw_observation = _observation_from_row(row)
+    secondary_observation = _observation_from_row(secondary_row)
+    domain = _domain_from_row(row)
     macro = _macro_domain(domain)
     entity = str(raw_observation["entity"])
     field_id = str(raw_observation["field_id"])
@@ -208,97 +371,373 @@ def _scenario_from_rows(
     secondary_field_id = str(secondary_observation["field_id"])
     secondary_entity = str(secondary_observation["entity"])
     secondary_value = _gold_value(secondary_row, secondary_field_id)
-    goal = str(state["goal"])
+    goal = _goal_from_row(row)
     base_task_id = _base_task_id(row)
     identifier = hashlib.sha256(
-        f"{base_task_id}:{split}:{variant_id}".encode("utf-8")
+        f"{base_task_id}:{split}:{variant_id}:{scenario_template}".encode("utf-8")
     ).hexdigest()[:16]
 
-    verification = _observation(
-        entity=entity,
-        field_id=field_id,
-        value=value,
-        source="official_verification_api",
-        timestamp=timestamp + 1,
-        condition="verified_current_value",
-        relevant=True,
-        authority="primary_record",
-        authenticated=True,
-        perturbation="clean",
+    def verified(
+        *,
+        field: str,
+        verified_entity: str,
+        verified_value: Any,
+        delta: int,
+    ) -> Observation:
+        return _observation(
+            entity=verified_entity,
+            field_id=field,
+            value=verified_value,
+            source="official_verification_api",
+            timestamp=timestamp + delta,
+            condition="verified_current_value",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+        )
+
+    def event(
+        suffix: str,
+        kind: str,
+        *,
+        event_entity: str,
+        field: str,
+        event_value: Any,
+        source: str,
+        delta: int,
+        condition: str,
+        relevant: bool,
+        authority: str,
+        authenticated: bool,
+        perturbation: str,
+        expected: str,
+        verification_value: Any | None = None,
+    ) -> ScenarioEvent:
+        verify_tool = None
+        verify_observation = None
+        if expected == "HOLD":
+            verify_tool = f"verify_{field}"
+            verify_observation = verified(
+                field=field,
+                verified_entity=event_entity,
+                verified_value=verification_value if verification_value is not None else event_value,
+                delta=delta + 1,
+            )
+        return ScenarioEvent(
+            event_id=f"{identifier}:{suffix}",
+            kind=kind,
+            observation=_observation(
+                entity=event_entity,
+                field_id=field,
+                value=event_value,
+                source=source,
+                timestamp=timestamp + delta,
+                condition=condition,
+                relevant=relevant,
+                authority=authority,
+                authenticated=authenticated,
+                perturbation=perturbation,
+            ),
+            expected_decision=expected,
+            verification_tool=verify_tool,
+            verification_observation=verify_observation,
+        )
+
+    no_auto_repair = (
+        event(
+            "ambiguous",
+            "ambiguous",
+            event_entity=entity,
+            field=field_id,
+            event_value=value,
+            source="unverified_channel",
+            delta=0,
+            condition="relevant_unverified_change_no_later_repair",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="source_ambiguity",
+            expected="HOLD",
+            verification_value=value,
+        ),
+        event(
+            "wrong-entity",
+            "wrong_entity",
+            event_entity=alternative_entity,
+            field=field_id,
+            event_value=alternative_value,
+            source="official_api",
+            delta=2,
+            condition="outside_active_entity",
+            relevant=False,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="entity_mismatch",
+            expected="IGNORE",
+        ),
+        event(
+            "authoritative-secondary",
+            "authoritative",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=secondary_value,
+            source="official_api",
+            delta=3,
+            condition="relevant_authoritative_change",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+            expected="UPDATE",
+        ),
+        event(
+            "stale-secondary",
+            "stale_conflict",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=stale_value,
+            source="cached_replica",
+            delta=-100,
+            condition="stale_conflict",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=True,
+            perturbation="stale_value",
+            expected="IGNORE",
+        ),
     )
-    events = (
-        ScenarioEvent(
-            event_id=f"{identifier}:ambiguous",
-            kind="ambiguous",
-            observation=_observation(
-                entity=entity,
-                field_id=field_id,
-                value=value,
-                source="unverified_channel",
-                timestamp=timestamp,
-                condition="relevant_unverified_change",
-                relevant=True,
-                authority="secondary_report",
-                authenticated=False,
-                perturbation="source_ambiguity",
-            ),
-            expected_decision="HOLD",
-            verification_tool=f"verify_{field_id}",
-            verification_observation=verification,
+    delayed_contamination = (
+        event(
+            "wrong-ambiguous",
+            "delayed_contamination",
+            event_entity=entity,
+            field=field_id,
+            event_value=alternative_value,
+            source="partner_feed",
+            delta=0,
+            condition="unverified_value_controls_later_precondition",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="wrong_value",
+            expected="HOLD",
+            verification_value=value,
         ),
-        ScenarioEvent(
-            event_id=f"{identifier}:wrong-entity",
-            kind="wrong_entity",
-            observation=_observation(
-                entity=alternative_entity,
-                field_id=field_id,
-                value=alternative_value,
-                source="official_api",
-                timestamp=timestamp + 2,
-                condition="outside_active_entity",
-                relevant=False,
-                authority="primary_record",
-                authenticated=True,
-                perturbation="entity_mismatch",
-            ),
-            expected_decision="IGNORE",
+        event(
+            "downstream-precondition",
+            "downstream_precondition",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=secondary_value,
+            source="official_api",
+            delta=3,
+            condition="requires_clean_prior_belief",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+            expected="UPDATE",
         ),
-        ScenarioEvent(
-            event_id=f"{identifier}:authoritative",
-            kind="authoritative",
-            observation=_observation(
-                entity=secondary_entity,
-                field_id=secondary_field_id,
-                value=secondary_value,
-                source="official_api",
-                timestamp=timestamp + 3,
-                condition="relevant_authoritative_change",
-                relevant=True,
-                authority="primary_record",
-                authenticated=True,
-                perturbation="clean",
-            ),
-            expected_decision="UPDATE",
-        ),
-        ScenarioEvent(
-            event_id=f"{identifier}:stale",
-            kind="stale_conflict",
-            observation=_observation(
-                entity=secondary_entity,
-                field_id=secondary_field_id,
-                value=stale_value,
-                source="cached_replica",
-                timestamp=max(0, timestamp - 100),
-                condition="stale_conflict",
-                relevant=True,
-                authority="secondary_report",
-                authenticated=True,
-                perturbation="stale_value",
-            ),
-            expected_decision="IGNORE",
+        event(
+            "wrong-entity",
+            "wrong_entity",
+            event_entity=alternative_entity,
+            field=field_id,
+            event_value=alternative_value,
+            source="official_api",
+            delta=4,
+            condition="outside_active_entity",
+            relevant=False,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="entity_mismatch",
+            expected="IGNORE",
         ),
     )
-    risk_raw = state.get("risk", {})
+    multi_field_dependency = (
+        event(
+            "authoritative-primary",
+            "authoritative",
+            event_entity=entity,
+            field=field_id,
+            event_value=value,
+            source="official_api",
+            delta=0,
+            condition="relevant_authoritative_change",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+            expected="UPDATE",
+        ),
+        event(
+            "ambiguous-secondary",
+            "ambiguous",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=secondary_value,
+            source="unverified_channel",
+            delta=1,
+            condition="second_required_field_is_unverified",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="source_ambiguity",
+            expected="HOLD",
+            verification_value=secondary_value,
+        ),
+        event(
+            "wrong-entity-secondary",
+            "wrong_entity",
+            event_entity=alternative_entity,
+            field=secondary_field_id,
+            event_value=alternative_value,
+            source="official_api",
+            delta=4,
+            condition="outside_active_entity",
+            relevant=False,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="entity_mismatch",
+            expected="IGNORE",
+        ),
+        event(
+            "stale-primary",
+            "stale_conflict",
+            event_entity=entity,
+            field=field_id,
+            event_value=stale_value,
+            source="cached_replica",
+            delta=-50,
+            condition="stale_conflict_after_primary_update",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=True,
+            perturbation="stale_value",
+            expected="IGNORE",
+        ),
+    )
+    verification_budget_choice = (
+        event(
+            "critical-ambiguous",
+            "verification_budget_choice",
+            event_entity=entity,
+            field=field_id,
+            event_value=value,
+            source="unverified_channel",
+            delta=0,
+            condition="critical_field_requires_verification",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="source_ambiguity",
+            expected="HOLD",
+            verification_value=value,
+        ),
+        event(
+            "noncritical-ambiguous",
+            "ambiguous_noncritical",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=stale_value,
+            source="user_note",
+            delta=2,
+            condition="noncritical_ambiguous_field_with_later_authority",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="verification_budget_distractor",
+            expected="IGNORE",
+        ),
+        event(
+            "authoritative-secondary",
+            "authoritative",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=secondary_value,
+            source="official_api",
+            delta=4,
+            condition="later_authoritative_repair_for_noncritical_ambiguous",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+            expected="UPDATE",
+        ),
+    )
+    complex_stale_conflict = (
+        event(
+            "authoritative-primary",
+            "authoritative",
+            event_entity=entity,
+            field=field_id,
+            event_value=value,
+            source="official_api",
+            delta=0,
+            condition="current_primary_authoritative_value",
+            relevant=True,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="clean",
+            expected="UPDATE",
+        ),
+        event(
+            "stale-primary",
+            "complex_stale_conflict",
+            event_entity=entity,
+            field=field_id,
+            event_value=stale_value,
+            source="legacy_sync_cache",
+            delta=-120,
+            condition="older_secondary_conflict_same_entity",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=True,
+            perturbation="stale_value",
+            expected="IGNORE",
+        ),
+        event(
+            "ambiguous-secondary",
+            "ambiguous",
+            event_entity=secondary_entity,
+            field=secondary_field_id,
+            event_value=secondary_value,
+            source="unverified_channel",
+            delta=2,
+            condition="related_field_requires_confirmation",
+            relevant=True,
+            authority="secondary_report",
+            authenticated=False,
+            perturbation="source_ambiguity",
+            expected="HOLD",
+            verification_value=secondary_value,
+        ),
+        event(
+            "wrong-entity",
+            "wrong_entity",
+            event_entity=alternative_entity,
+            field=field_id,
+            event_value=alternative_value,
+            source="official_api",
+            delta=5,
+            condition="different_entity_authoritative_but_out_of_scope",
+            relevant=False,
+            authority="primary_record",
+            authenticated=True,
+            perturbation="entity_mismatch",
+            expected="IGNORE",
+        ),
+    )
+    events_by_template = {
+        "no_auto_repair": no_auto_repair,
+        "delayed_contamination": delayed_contamination,
+        "multi_field_dependency": multi_field_dependency,
+        "verification_budget_choice": verification_budget_choice,
+        "complex_stale_conflict": complex_stale_conflict,
+    }
+    events = events_by_template[scenario_template]
+    risk_raw = _risk_from_row(row)
     risk_name = str(risk_raw.get("risk", "medium"))
     if risk_name not in {item.value for item in RiskLevel}:
         risk_name = "medium"
@@ -306,17 +745,17 @@ def _scenario_from_rows(
     if secondary_field_id != field_id:
         dependent_rows.append(secondary_row)
     dependent_fields = tuple(
-        str(item["state"]["observation"]["field_id"]) for item in dependent_rows
+        str(_observation_from_row(item)["field_id"]) for item in dependent_rows
     )
     dependent_slots = [
         BeliefSlot(
-            id=str(item["state"]["observation"]["field_id"]),
+            id=str(_observation_from_row(item)["field_id"]),
             value=None,
             status=SlotStatus.EMPTY,
             source="initial_state",
             observed_at=max(0, timestamp - 1),
             valid_from=None,
-            entity=str(item["state"]["observation"]["entity"]),
+            entity=str(_observation_from_row(item)["entity"]),
         )
         for item in dependent_rows
     ]
@@ -360,6 +799,18 @@ def _scenario_from_rows(
     provenance["distractor_base_task_ids"] = list(
         dict.fromkeys(distractor_base_task_ids)
     )
+    provenance["scenario_template"] = scenario_template
+    verification_tools = {
+        event.observation.field_id: event.verification_tool
+        for event in events
+        if event.verification_tool is not None
+    }
+    for slot in initial_state.slots:
+        if slot.id == "__verification_policy" and isinstance(slot.value, dict):
+            slot.value["tool_by_field"] = verification_tools
+            slot.value["verification_budget"] = (
+                1 if scenario_template == "verification_budget_choice" else 2
+            )
     return RLScenario(
         scenario_id=f"rl:{identifier}",
         base_task_id=base_task_id,
@@ -377,7 +828,9 @@ def _scenario_from_rows(
             reversible=bool(risk_raw.get("reversible", True)),
         ),
         budget=Budget(
-            verification_remaining=2,
+            verification_remaining=(
+                1 if scenario_template == "verification_budget_choice" else 2
+            ),
             tool_remaining=5,
             steps_remaining=8,
             tokens_remaining=4096,
@@ -385,8 +838,8 @@ def _scenario_from_rows(
         ledger_capacity=4,
         events=events,
         oracle_state={
-            str(item["state"]["observation"]["field_id"]): _gold_value(
-                item, str(item["state"]["observation"]["field_id"])
+            str(_observation_from_row(item)["field_id"]): _gold_value(
+                item, str(_observation_from_row(item)["field_id"])
             )
             for item in dependent_rows
         },
@@ -436,8 +889,8 @@ def _alternative_index(
 ) -> dict[tuple[str, str, str], list[Mapping[str, Any]]]:
     index: dict[tuple[str, str, str], list[Mapping[str, Any]]] = defaultdict(list)
     for row in rows:
-        domain = str(row.get("taxonomy", {}).get("domain", "other"))
-        field_id = str(row["state"]["observation"]["field_id"])
+        domain = _domain_from_row(row)
+        field_id = str(_observation_from_row(row)["field_id"])
         macro = _macro_domain(domain)
         for key in (
             ("domain_field", domain, field_id),
@@ -476,7 +929,7 @@ def _select_alternative(
             row
             for row in index.get(key, ())
             if _base_task_id(row) != base_task_id
-            and str(row["state"]["observation"]["entity"]) != entity
+            and str(_observation_from_row(row)["entity"]) != entity
         ]
         if not candidates:
             continue
@@ -484,7 +937,7 @@ def _select_alternative(
             fallback = candidates
         conflicting = []
         for candidate in candidates:
-            candidate_field = str(candidate["state"]["observation"]["field_id"])
+            candidate_field = str(_observation_from_row(candidate)["field_id"])
             if _gold_value(candidate, candidate_field) != exclude_value:
                 conflicting.append(candidate)
         if conflicting:
@@ -494,12 +947,43 @@ def _select_alternative(
     raise ValueError(f"no distractor is available for base task {base_task_id}")
 
 
+def _source_dataset_from_row(row: Mapping[str, Any]) -> str:
+    provenance = row.get("provenance", {})
+    if isinstance(provenance, Mapping):
+        return str(provenance.get("source_dataset", "unknown"))
+    return "unknown"
+
+
+def _interleave_task_groups(
+    task_groups: Sequence[list[dict[str, Any]]],
+) -> list[list[dict[str, Any]]]:
+    by_source: dict[str, list[list[dict[str, Any]]]] = defaultdict(list)
+    for rows in task_groups:
+        by_source[_source_dataset_from_row(rows[0])].append(rows)
+    for groups in by_source.values():
+        groups.sort(key=lambda rows: _base_task_id(rows[0]))
+    result: list[list[dict[str, Any]]] = []
+    source_names = sorted(by_source)
+    index = 0
+    while True:
+        added = False
+        for source_name in source_names:
+            groups = by_source[source_name]
+            if index < len(groups):
+                result.append(groups[index])
+                added = True
+        if not added:
+            return result
+        index += 1
+
+
 def build_rl_corpus(
     source_path: str | Path,
     output_dir: str | Path,
     *,
     seed: int = 42,
     split_counts: Mapping[str, int] | None = None,
+    raw_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Build deterministic, task-disjoint Stage-2 episodes from accepted source rows."""
     source = Path(source_path)
@@ -511,7 +995,10 @@ def build_rl_corpus(
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     eligible_rows: list[dict[str, Any]] = []
     eligible_count = 0
-    for row in _read_jsonl(source):
+    rows_from_sft = list(_read_jsonl(source))
+    resolved_raw_dir = _default_raw_dir(source) if raw_dir is None else Path(raw_dir)
+    rows_from_raw = _load_raw_stage2_rows(resolved_raw_dir)
+    for row in rows_from_sft + rows_from_raw:
         if not _eligible(row):
             continue
         eligible_count += 1
@@ -524,10 +1011,10 @@ def build_rl_corpus(
     for base_id, rows in grouped.items():
         row = rows[0]
         split = split_base_task(base_id, seed)
-        domain = str(row.get("taxonomy", {}).get("domain", "other"))
+        domain = _domain_from_row(row)
         pools[(split, _macro_domain(domain))].append(rows)
-    for task_groups in pools.values():
-        task_groups.sort(key=lambda rows: _base_task_id(rows[0]))
+    for key, task_groups in list(pools.items()):
+        pools[key] = _interleave_task_groups(task_groups)
 
     eligible_by_split: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in eligible_rows:
@@ -552,9 +1039,9 @@ def build_rl_corpus(
                 variant = offset // len(candidates)
                 primary = field_rows[0]
                 secondary = field_rows[1]
-                primary_observation = primary["state"]["observation"]
-                secondary_observation = secondary["state"]["observation"]
-                domain = str(primary.get("taxonomy", {}).get("domain", "other"))
+                primary_observation = _observation_from_row(primary)
+                secondary_observation = _observation_from_row(secondary)
+                domain = _domain_from_row(primary)
                 alternative = _select_alternative(
                     distractors_by_split[split],
                     base_task_id=base_id,
@@ -566,7 +1053,7 @@ def build_rl_corpus(
                     ),
                     salt=offset + variant,
                 )
-                alternative_observation = alternative["state"]["observation"]
+                alternative_observation = _observation_from_row(alternative)
                 alternative_field = str(alternative_observation["field_id"])
                 if secondary.get("_stage2_stale_value") is not None:
                     stale_value = secondary["_stage2_stale_value"]
@@ -584,14 +1071,13 @@ def build_rl_corpus(
                         salt=offset + variant + 1,
                     )
                     stale_distractor_id = _base_task_id(stale_alternative)
-                    stale_field = str(
-                        stale_alternative["state"]["observation"]["field_id"]
-                    )
+                    stale_field = str(_observation_from_row(stale_alternative)["field_id"])
                     stale_value = _gold_value(stale_alternative, stale_field)
                 scenario = _scenario_from_rows(
                     field_rows,
                     split=split,
                     variant_id=variant,
+                    scenario_template=SCENARIO_TEMPLATES[offset % len(SCENARIO_TEMPLATES)],
                     alternative_entity=str(alternative_observation["entity"]),
                     alternative_value=_gold_value(alternative, alternative_field),
                     stale_value=stale_value,
@@ -626,6 +1112,11 @@ def build_rl_corpus(
     quality = {
         "schema_version": "sieve.rl.scenario.v1",
         "eligible_source_rows": eligible_count,
+        "sft_source_rows": len(rows_from_sft),
+        "raw_enrichment_rows": len(rows_from_raw),
+        "source_dataset_counts": dict(
+            Counter(_source_dataset_from_row(row) for row in eligible_rows)
+        ),
         "unique_base_tasks": len(grouped),
         "multi_field_base_tasks": sum(
             len(_distinct_field_rows(rows)) > 1 for rows in grouped.values()
@@ -647,9 +1138,27 @@ def build_rl_corpus(
             split: dict(Counter(item.macro_domain for item in scenarios))
             for split, scenarios in scenarios_by_split.items()
         },
+        "scenario_source_counts": {
+            split: dict(
+                Counter(
+                    str(item.provenance.get("source_dataset", "unknown"))
+                    for item in scenarios
+                )
+            )
+            for split, scenarios in scenarios_by_split.items()
+        },
         "event_kind_counts": {
             split: dict(
                 Counter(event.kind for item in scenarios for event in item.events)
+            )
+            for split, scenarios in scenarios_by_split.items()
+        },
+        "scenario_template_counts": {
+            split: dict(
+                Counter(
+                    str(item.provenance.get("scenario_template", "unknown"))
+                    for item in scenarios
+                )
             )
             for split, scenarios in scenarios_by_split.items()
         },
@@ -664,8 +1173,12 @@ def build_rl_corpus(
         "seed": seed,
         "source_file": source.name,
         "source_sha256": _file_sha256(source),
+        "raw_enrichment_dir": (
+            str(resolved_raw_dir.resolve()) if resolved_raw_dir is not None else None
+        ),
         "split_policy": "sha256(seed:base_task_id), 75/10/15 before augmentation",
         "macro_domain_targets": MACRO_QUOTAS,
+        "scenario_templates": SCENARIO_TEMPLATES,
         "split_counts": {name: len(scenarios_by_split[name]) for name in SPLITS},
         "split_sha256": split_hashes,
     }

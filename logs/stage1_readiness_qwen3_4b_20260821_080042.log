@@ -1,0 +1,104 @@
+nohup: ignoring input
+[readiness] load policy start model=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/model/Qwen3-4B checkpoint=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage1-qwen3-4b/best
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|█████████�{
+  "ready_for_stage2": false,
+  "failures": {
+    "closed_loop_success_rate": "observed=0, required min 0.6"
+  },
+  "sample_count": 300,
+  "probe_scenarios": 8,
+  "closed_loop_scenarios": 100,
+  "metrics": {
+    "parse_rate": 1.0,
+    "executable_rate": 1.0,
+    "decision_macro_f1": 1.0,
+    "decision_accuracy": 1.0,
+    "false_update_rate": 0.0,
+    "full_action_exact_match": 1.0,
+    "patch_value_exact_match": 1.0,
+    "group_reward_variance": 0.14494584449352496,
+    "closed_loop_success_rate": 0.0,
+    "closed_loop_parse_rate": 0.9925,
+    "closed_loop_false_update_rate": 0.0025,
+    "closed_loop_mean_return": 0.0
+  },
+  "artifacts": {
+    "sft_adapter_sha256": "79407496c1a8a51bcef9eaa910a5158e4d450952689ce9b08462e6073c03672b",
+    "base_model_fingerprint": "312805d62be174cd77a466537a574ac393c3f3654fdf5a221c50acb5ab90e492",
+    "stage1_dev_sha256": "fa23caf9fdce7091e00fff7a60fb3b32a2af1f5385717939f84b1c2ff50e8a36",
+    "stage2_dev_sha256": "5a1cff94110fa1ce5f0724c13ba7832e0fad9e72f39ca169596aa979b2b684f6"
+  }
+}
+ta=8m18s
+[readiness] SFT dev free-generation 80/300 progress=26.67% elapsed=2m55s eta=8m01s
+[readiness] SFT dev free-generation 90/300 progress=30.00% elapsed=3m17s eta=7m39s
+[readiness] SFT dev free-generation 100/300 progress=33.33% elapsed=3m40s eta=7m20s
+[readiness] SFT dev free-generation 110/300 progress=36.67% elapsed=4m03s eta=7m00s
+[readiness] SFT dev free-generation 120/300 progress=40.00% elapsed=4m27s eta=6m40s
+[readiness] SFT dev free-generation 130/300 progress=43.33% elapsed=4m50s eta=6m20s
+[readiness] SFT dev free-generation 140/300 progress=46.67% elapsed=5m11s eta=5m55s
+[readiness] SFT dev free-generation 150/300 progress=50.00% elapsed=5m33s eta=5m33s
+[readiness] SFT dev free-generation 160/300 progress=53.33% elapsed=5m55s eta=5m10s
+[readiness] SFT dev free-generation 170/300 progress=56.67% elapsed=6m17s eta=4m48s
+[readiness] SFT dev free-generation 180/300 progress=60.00% elapsed=6m39s eta=4m26s
+[readiness] SFT dev free-generation 190/300 progress=63.33% elapsed=7m05s eta=4m06s
+[readiness] SFT dev free-generation 200/300 progress=66.67% elapsed=7m31s eta=3m45s
+[readiness] SFT dev free-generation 210/300 progress=70.00% elapsed=7m56s eta=3m24s
+[readiness] SFT dev free-generation 220/300 progress=73.33% elapsed=8m22s eta=3m02s
+[readiness] SFT dev free-generation 230/300 progress=76.67% elapsed=8m48s eta=2m40s
+[readiness] SFT dev free-generation 240/300 progress=80.00% elapsed=9m14s eta=2m18s
+[readiness] SFT dev free-generation 250/300 progress=83.33% elapsed=9m40s eta=1m56s
+[readiness] SFT dev free-generation 260/300 progress=86.67% elapsed=10m06s eta=1m33s
+[readiness] SFT dev free-generation 270/300 progress=90.00% elapsed=10m32s eta=1m10s
+[readiness] SFT dev free-generation 280/300 progress=93.33% elapsed=10m58s eta=47s
+[readiness] SFT dev free-generation 290/300 progress=96.67% elapsed=11m24s eta=23s
+[readiness] SFT dev free-generation 300/300 progress=100.00% elapsed=11m35s eta=0s
+[readiness] SFT dev free-generation done parse_rate=1.0000 executable_rate=1.0000 decision_macro_f1=1.0000 full_action_exact_match=1.0000
+[readiness] GRPO group probe start scenarios=8 group_size=4
+[readiness] GRPO group probe 1/8 progress=12.50% elapsed=35s eta=4m09s
+[readiness] GRPO group probe 5/8 progress=62.50% elapsed=3m08s eta=1m53s
+[readiness] GRPO group probe 8/8 progress=100.00% elapsed=4m49s eta=0s
+[readiness] GRPO group probe done group_reward_variance=0.144946
+[readiness] stage2 closed-loop start scenarios=100
+[readiness] stage2 closed-loop 1/100 progress=1.00% elapsed=8s eta=13m50s
+[readiness] stage2 closed-loop 10/100 progress=10.00% elapsed=1m17s eta=11m38s
+[readiness] stage2 closed-loop 20/100 progress=20.00% elapsed=2m32s eta=10m11s
+[readiness] stage2 closed-loop 30/100 progress=30.00% elapsed=3m52s eta=9m03s
+[readiness] stage2 closed-loop 40/100 progress=40.00% elapsed=5m12s eta=7m48s
+[readiness] stage2 closed-loop 50/100 progress=50.00% elapsed=6m39s eta=6m39s
+[readiness] stage2 closed-loop 60/100 progress=60.00% elapsed=8m07s eta=5m25s
+[readiness] stage2 closed-loop 70/100 progress=70.00% elapsed=9m29s eta=4m04s
+[readiness] stage2 closed-loop 80/100 progress=80.00% elapsed=10m48s eta=2m42s
+[readiness] stage2 closed-loop 90/100 progress=90.00% elapsed=12m13s eta=1m21s
+[readiness] stage2 closed-loop 100/100 progress=100.00% elapsed=13m36s eta=0s
+[readiness] stage2 closed-loop done success_rate=0.0000 parse_rate=0.9925 false_update_rate=0.0025
+{
+  "ready_for_stage2": false,
+  "failures": {
+    "closed_loop_success_rate": "observed=0, required min 0.6"
+  },
+  "sample_count": 300,
+  "probe_scenarios": 8,
+  "closed_loop_scenarios": 100,
+  "metrics": {
+    "parse_rate": 1.0,
+    "executable_rate": 1.0,
+    "decision_macro_f1": 1.0,
+    "decision_accuracy": 1.0,
+    "false_update_rate": 0.0,
+    "full_action_exact_match": 1.0,
+    "patch_value_exact_match": 1.0,
+    "group_reward_variance": 0.14494584449352496,
+    "closed_loop_success_rate": 0.0,
+    "closed_loop_parse_rate": 0.9925,
+    "closed_loop_false_update_rate": 0.0025,
+    "closed_loop_mean_return": 0.0
+  },
+  "artifacts": {
+    "sft_adapter_sha256": "79407496c1a8a51bcef9eaa910a5158e4d450952689ce9b08462e6073c03672b",
+    "base_model_fingerprint": "312805d62be174cd77a466537a574ac393c3f3654fdf5a221c50acb5ab90e492",
+    "stage1_dev_sha256": "fa23caf9fdce7091e00fff7a60fb3b32a2af1f5385717939f84b1c2ff50e8a36",
+    "stage2_dev_sha256": "5a1cff94110fa1ce5f0724c13ba7832e0fad9e72f39ca169596aa979b2b684f6"
+  }
+}

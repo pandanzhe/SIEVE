@@ -64,6 +64,7 @@ class HFGRPOTrainConfig:
     multiplier_learning_rate: float
     max_grad_norm: float
     eval_steps: int
+    eval_scenario_limit: int | None
     save_steps: int
     save_total_limit: int
     resume_from: Path | None
@@ -153,11 +154,6 @@ def parse_hf_grpo_config(raw: Mapping[str, Any], root: str | Path) -> HFGRPOConf
     if not 0.0 < top_p <= 1.0:
         raise ValueError("rollout.top_p must be in (0, 1]")
     temperature = _positive_float(rollout_raw, "temperature")
-    if temperature != 1.0 or top_p != 1.0:
-        raise ValueError(
-            "custom GRPO requires rollout.temperature=1.0 and top_p=1.0 so "
-            "behavior and update log-probabilities define the same policy"
-        )
 
     clip_ratio = _unit_interval(
         train_raw.get("clip_ratio", -1), "train.clip_ratio", include_one=False
@@ -183,6 +179,14 @@ def parse_hf_grpo_config(raw: Mapping[str, Any], root: str | Path) -> HFGRPOConf
     if float(train_raw.get("multiplier_learning_rate", 0.0)) < 0.0:
         raise ValueError("train.multiplier_learning_rate must be non-negative")
     num_processes = _positive_int(hardware_raw, "num_processes")
+
+    eval_scenario_limit = train_raw.get("eval_scenario_limit")
+    if eval_scenario_limit in ("", None):
+        parsed_eval_scenario_limit = None
+    else:
+        parsed_eval_scenario_limit = int(eval_scenario_limit)
+        if parsed_eval_scenario_limit <= 0:
+            raise ValueError("train.eval_scenario_limit must be positive when set")
 
     return HFGRPOConfig(
         seed=int(raw.get("seed", 42)),
@@ -234,6 +238,7 @@ def parse_hf_grpo_config(raw: Mapping[str, Any], root: str | Path) -> HFGRPOConf
             ),
             max_grad_norm=_positive_float(train_raw, "max_grad_norm"),
             eval_steps=_positive_int(train_raw, "eval_steps"),
+            eval_scenario_limit=parsed_eval_scenario_limit,
             save_steps=_positive_int(train_raw, "save_steps"),
             save_total_limit=_positive_int(train_raw, "save_total_limit"),
             resume_from=(

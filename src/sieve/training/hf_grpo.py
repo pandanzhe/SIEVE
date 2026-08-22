@@ -3,17 +3,31 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import random
 import shutil
 from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
 import numpy as np
 
+from ..core.types import (
+    Decision,
+    Patch,
+    PatchOp,
+    RevisionOutput,
+    SlotStatus,
+    VerificationRequest,
+)
 from ..environments.scenario_revision_env import ScenarioRevisionEnvironment
 from ..policies.hf_lora_policy import local_model_ready
-from ..policies.hf_revision_io import render_context_prompt, safe_parse_revision_output
+from ..policies.hf_revision_io import (
+    render_context_prompt,
+    revision_output_payload,
+    safe_parse_revision_output,
+)
 from ..rl_data.build import split_base_task
 from ..rl_data.io import read_scenarios
 from ..rl_data.schema import RLScenario
@@ -43,6 +57,9 @@ class HFRolloutTrajectory:
     valid_actions: int
     action_count: int
     success: bool
+    final_belief_slots: tuple[dict[str, Any], ...]
+    steps: tuple[dict[str, Any], ...]
+    source: str = "policy"
 
 
 @dataclass(frozen=True)
@@ -140,8 +157,6 @@ def _raw_private_contract(path: Path) -> tuple[int, int]:
 def _verification_contract_valid(scenario: RLScenario) -> bool:
     if not scenario.events:
         return False
-    event = scenario.events[0]
-    evidence = event.verification_observation
     policy_slot = scenario.initial_state.get("__verification_policy")
     policy_value = None if policy_slot is None else policy_slot.value
     tool_mapping = (
@@ -149,20 +164,25 @@ def _verification_contract_valid(scenario: RLScenario) -> bool:
         if isinstance(policy_value, dict)
         else None
     )
-    return bool(
-        evidence is not None
-        and event.verification_tool
-        and event.verification_tool == f"verify_{event.observation.field_id}"
-        and evidence.field_id == event.observation.field_id
-        and evidence.entity == event.observation.entity
-        and isinstance(tool_mapping, dict)
-        and tool_mapping.get(event.observation.field_id) == event.verification_tool
-        and all(
-            item.verification_tool is None
-            and item.verification_observation is None
-            for item in scenario.events[1:]
-        )
-    )
+    if not isinstance(tool_mapping, dict):
+        return False
+    hold_with_verification = 0
+    for event in scenario.events:
+        evidence = event.verification_observation
+        if event.expected_decision == "HOLD":
+            hold_with_verification += 1
+            if not (
+                evidence is not None
+                and event.verification_tool
+                and event.verification_tool == f"verify_{event.observation.field_id}"
+                and evidence.field_id == event.observation.field_id
+                and evidence.entity == event.observation.entity
+                and tool_mapping.get(event.observation.field_id) == event.verification_tool
+            ):
+                return False
+        elif event.verification_tool is not None or evidence is not None:
+            return False
+    return hold_with_verification > 0
 
 
 def audit_hf_grpo_inputs(config: HFGRPOConfig) -> dict[str, Any]:
@@ -207,11 +227,16 @@ def audit_hf_grpo_inputs(config: HFGRPOConfig) -> dict[str, Any]:
         target_leaks += leaks
         missing_private += missing_blocks
     event_contract_errors = sum(
-        len(scenario.events) != 4
-        or {event.kind for event in scenario.events}
-        != {"ambiguous", "wrong_entity", "authoritative", "stale_conflict"}
+        len(scenario.events) < 3
         or len(scenario.risk.dependent_fields) != 2
         or not _verification_contract_valid(scenario)
+        or scenario.provenance.get("scenario_template") not in {
+            "no_auto_repair",
+            "delayed_contamination",
+            "multi_field_dependency",
+            "verification_budget_choice",
+            "complex_stale_conflict",
+        }
         or any(
             event.expected_decision not in {"UPDATE", "HOLD", "IGNORE"}
             for event in scenario.events
@@ -487,11 +512,6 @@ def _sampling_generation_args(
                 "do_sample": True,
                 "temperature": config.rollout.temperature,
                 "top_p": config.rollout.top_p,
-                "top_k": 0,
-                "typical_p": 1.0,
-                "min_p": None,
-                "epsilon_cutoff": 0.0,
-                "eta_cutoff": 0.0,
             }
         )
     return arguments
@@ -540,6 +560,190 @@ def _generate_completion(
     return generated, prompt_length, completion_text
 
 
+def _encode_action_completion(
+    model: Any,
+    reference: Any,
+    tokenizer: Any,
+    prompt: str,
+    output: RevisionOutput,
+    config: HFGRPOConfig,
+    device: Any,
+) -> HFRolloutExperience:
+    import torch
+
+    encoded_prompt = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=config.model.max_prompt_length,
+        add_special_tokens=True,
+    )
+    prompt_ids = encoded_prompt["input_ids"][0].to(device)
+    completion_text = json.dumps(
+        revision_output_payload(output), ensure_ascii=False, separators=(",", ":")
+    )
+    completion_ids = tokenizer(
+        completion_text, add_special_tokens=False, return_tensors="pt"
+    )["input_ids"][0].to(device)
+    if completion_ids.numel() == 0:
+        raise RuntimeError("expert branch produced an empty completion")
+    full_ids = torch.cat([prompt_ids, completion_ids], dim=0)
+    completion_start = int(prompt_ids.numel())
+    with torch.no_grad():
+        old = _completion_log_probabilities(
+            model, full_ids, completion_start
+        ).detach()
+        reference_log_probs = _completion_log_probabilities(
+            reference, full_ids, completion_start
+        ).detach()
+    return HFRolloutExperience(
+        input_ids=tuple(int(value) for value in full_ids.detach().cpu().tolist()),
+        completion_start=completion_start,
+        old_log_probabilities=tuple(float(value) for value in old.cpu().tolist()),
+        reference_log_probabilities=tuple(
+            float(value) for value in reference_log_probs.cpu().tolist()
+        ),
+    )
+
+
+def _expert_output(scenario: RLScenario, environment: ScenarioRevisionEnvironment) -> RevisionOutput:
+    observation = environment._current_observation()
+    if environment._verification_observation is not None:
+        return RevisionOutput(
+            Decision.UPDATE,
+            (observation.field_id,),
+            (Patch(PatchOp.SET_VALUE, observation.field_id, observation.value),),
+            None,
+        )
+    event = environment._base_event()
+    if event.expected_decision == Decision.HOLD.value:
+        if event.verification_tool is None:
+            return RevisionOutput(Decision.IGNORE)
+        return RevisionOutput(
+            Decision.HOLD,
+            (observation.field_id,),
+            (
+                Patch(
+                    PatchOp.SET_STATUS,
+                    observation.field_id,
+                    SlotStatus.PENDING.value,
+                ),
+            ),
+            VerificationRequest(event.verification_tool, observation.field_id),
+        )
+    if event.expected_decision == Decision.UPDATE.value:
+        return RevisionOutput(
+            Decision.UPDATE,
+            (observation.field_id,),
+            (Patch(PatchOp.SET_VALUE, observation.field_id, observation.value),),
+            None,
+        )
+    return RevisionOutput(Decision.IGNORE)
+
+
+def _collect_expert_trajectory(
+    policy: Any,
+    reference: Any,
+    tokenizer: Any,
+    scenario: RLScenario,
+    config: HFGRPOConfig,
+    device: Any,
+    seed: int,
+) -> HFRolloutTrajectory:
+    environment = ScenarioRevisionEnvironment([scenario], gamma=config.train.gamma)
+    context = environment.reset(scenario.scenario_id, seed)
+    experiences: list[HFRolloutExperience] = []
+    total_return = 0.0
+    discount = 1.0
+    total_costs = {name: 0.0 for name in config.constraints}
+    valid_actions = 0
+    success = False
+    steps: list[dict[str, Any]] = []
+
+    policy.eval()
+    reference.eval()
+    for step_index in range(config.rollout.max_episode_steps):
+        prompt = render_context_prompt(
+            tokenizer,
+            context,
+            enable_thinking=config.model.enable_thinking,
+        )
+        output = _expert_output(scenario, environment)
+        experiences.append(
+            _encode_action_completion(
+                policy, reference, tokenizer, prompt, output, config, device
+            )
+        )
+        valid_actions += 1
+        transition = environment.step(output, invalid_format=False, token_cost=0)
+        total_return += discount * transition.reward
+        discount *= config.train.gamma
+        for name in total_costs:
+            total_costs[name] += float(transition.costs.get(name, 0.0))
+        steps.append(
+            {
+                "step_index": step_index,
+                "event_kind": transition.info.get("event_kind"),
+                "observation": {
+                    "field_id": context.observation.field_id,
+                    "value": context.observation.value,
+                    "source": context.observation.source,
+                    "entity": context.observation.entity,
+                    "source_authority": context.observation.source_authority,
+                    "authenticated": context.observation.authenticated,
+                    "observed_at": context.observation.observed_at,
+                },
+                "raw_completion": json.dumps(
+                    revision_output_payload(output),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                "parsed": True,
+                "parse_error": None,
+                "action": revision_output_payload(output),
+                "reward": transition.reward,
+                "discounted_return_so_far": total_return,
+                "costs": transition.costs,
+                "transition": transition.info.get("transition"),
+                "executor_error": transition.info.get("executor_error"),
+                "verification_error": transition.info.get("verification_error"),
+            }
+        )
+        if transition.terminated:
+            success = bool(transition.info["success"])
+            break
+        if transition.next_context is None:
+            raise RuntimeError("non-terminal expert Stage-2 step has no context")
+        context = transition.next_context
+
+    action_count = len(experiences)
+    if action_count == 0:
+        raise RuntimeError("Stage-2 expert rollout produced no actions")
+    final_belief_slots = tuple(
+        {
+            "id": slot.id,
+            "value": slot.value,
+            "status": slot.status.value,
+            "source": slot.source,
+            "observed_at": slot.observed_at,
+            "valid_from": slot.valid_from,
+            "entity": slot.entity,
+        }
+        for slot in (environment._state.slots if environment._state is not None else [])
+    )
+    return HFRolloutTrajectory(
+        experiences=tuple(experiences),
+        task_return=total_return,
+        costs=total_costs,
+        valid_actions=valid_actions,
+        action_count=action_count,
+        success=success,
+        final_belief_slots=final_belief_slots,
+        steps=tuple(steps),
+        source="expert",
+    )
+
+
 def _collect_trajectory(
     policy: Any,
     reference: Any,
@@ -559,6 +763,7 @@ def _collect_trajectory(
     total_costs = {name: 0.0 for name in config.constraints}
     valid_actions = 0
     success = False
+    steps: list[dict[str, Any]] = []
 
     policy.eval()
     reference.eval()
@@ -577,7 +782,7 @@ def _collect_trajectory(
             seed + step_index,
             greedy=False,
         )
-        output, valid, _error = safe_parse_revision_output(text)
+        output, valid, error = safe_parse_revision_output(text)
         valid_actions += int(valid)
         with torch.no_grad():
             old = _completion_log_probabilities(
@@ -605,6 +810,31 @@ def _collect_trajectory(
         discount *= config.train.gamma
         for name in total_costs:
             total_costs[name] += float(transition.costs.get(name, 0.0))
+        steps.append(
+            {
+                "step_index": step_index,
+                "event_kind": transition.info.get("event_kind"),
+                "observation": {
+                    "field_id": context.observation.field_id,
+                    "value": context.observation.value,
+                    "source": context.observation.source,
+                    "entity": context.observation.entity,
+                    "source_authority": context.observation.source_authority,
+                    "authenticated": context.observation.authenticated,
+                    "observed_at": context.observation.observed_at,
+                },
+                "raw_completion": text,
+                "parsed": valid,
+                "parse_error": error,
+                "action": revision_output_payload(output),
+                "reward": transition.reward,
+                "discounted_return_so_far": total_return,
+                "costs": transition.costs,
+                "transition": transition.info.get("transition"),
+                "executor_error": transition.info.get("executor_error"),
+                "verification_error": transition.info.get("verification_error"),
+            }
+        )
         if transition.terminated:
             success = bool(transition.info["success"])
             break
@@ -615,6 +845,18 @@ def _collect_trajectory(
     action_count = len(experiences)
     if action_count == 0:
         raise RuntimeError("Stage-2 rollout produced no actions")
+    final_belief_slots = tuple(
+        {
+            "id": slot.id,
+            "value": slot.value,
+            "status": slot.status.value,
+            "source": slot.source,
+            "observed_at": slot.observed_at,
+            "valid_from": slot.valid_from,
+            "entity": slot.entity,
+        }
+        for slot in (environment._state.slots if environment._state is not None else [])
+    )
     return HFRolloutTrajectory(
         experiences=tuple(experiences),
         task_return=total_return,
@@ -622,6 +864,8 @@ def _collect_trajectory(
         valid_actions=valid_actions,
         action_count=action_count,
         success=success,
+        final_belief_slots=final_belief_slots,
+        steps=tuple(steps),
     )
 
 
@@ -800,6 +1044,13 @@ def _evaluate_scenarios(
 
     selected = list(scenarios if limit is None else scenarios[:limit])
     local = selected[accelerator.process_index :: accelerator.num_processes]
+    if accelerator.is_main_process:
+        limit_text = "all" if limit is None else str(limit)
+        print(
+            "[stage2] dev eval start "
+            f"scenarios={len(selected)} limit={limit_text}",
+            flush=True,
+        )
     unwrapped = accelerator.unwrap_model(policy)
     unwrapped.eval()
     totals = np.zeros(7, dtype=np.float64)
@@ -841,13 +1092,22 @@ def _evaluate_scenarios(
             context = transition.next_context
         totals[0] += 1.0
         totals[4] += episode_return
+        if (
+            accelerator.is_main_process
+            and (scenario_index + 1 == len(local) or (scenario_index + 1) % 10 == 0)
+        ):
+            print(
+                "[stage2] dev eval progress "
+                f"{scenario_index + 1}/{len(local)}",
+                flush=True,
+            )
     gathered = accelerator.gather(
         torch.tensor(totals, dtype=torch.float64, device=accelerator.device)
     ).reshape(-1, len(totals)).sum(dim=0).cpu().numpy()
     episode_count = max(gathered[0], 1.0)
     action_count = max(gathered[2], 1.0)
     policy.train()
-    return {
+    metrics = {
         "episodes": float(gathered[0]),
         "success_rate": float(gathered[1] / episode_count),
         "parse_rate": float(gathered[3] / action_count),
@@ -855,11 +1115,117 @@ def _evaluate_scenarios(
         "false_update_rate": float(gathered[5] / action_count),
         "invalid_format_rate": float(gathered[6] / action_count),
     }
+    if accelerator.is_main_process:
+        print(
+            "[stage2] dev eval done "
+            f"episodes={metrics['episodes']:.0f} "
+            f"success={metrics['success_rate']:.4f} "
+            f"parse={metrics['parse_rate']:.4f} "
+            f"return={metrics['mean_return']:.4f}",
+            flush=True,
+        )
+    return metrics
 
 
 def _append_jsonl(path: Path, value: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(value, ensure_ascii=False) + "\n")
+
+
+def _append_csv(path: Path, row: dict[str, Any]) -> None:
+    import csv
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(row)
+    write_header = not path.is_file() or path.stat().st_size == 0
+    with path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
+
+
+def _run_id() -> str:
+    return os.environ.get("SIEVE_RUN_ID") or datetime.utcnow().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+
+def _rollout_payload(
+    *,
+    iteration: int,
+    process_index: int,
+    group_index: int,
+    sample_index: int,
+    scenario: RLScenario,
+    seed: int,
+    trajectory: HFRolloutTrajectory,
+    score: float,
+    advantage: float,
+) -> dict[str, Any]:
+    return {
+        "iteration": iteration,
+        "process_index": process_index,
+        "group_index": group_index,
+        "sample_index": sample_index,
+        "scenario_id": scenario.scenario_id,
+        "base_task_id": scenario.base_task_id,
+        "macro_domain": scenario.macro_domain,
+        "scenario_template": scenario.provenance.get("scenario_template"),
+        "seed": seed,
+        "task_return": trajectory.task_return,
+        "penalized_score": score,
+        "advantage": advantage,
+        "source": trajectory.source,
+        "success": trajectory.success,
+        "valid_actions": trajectory.valid_actions,
+        "action_count": trajectory.action_count,
+        "costs": trajectory.costs,
+        "oracle_state": scenario.oracle_state,
+        "final_belief_slots": list(trajectory.final_belief_slots),
+        "steps": list(trajectory.steps),
+    }
+
+
+def _analyze_rollouts(rollouts_dir: Path) -> dict[str, Any]:
+    from collections import Counter
+
+    rows: list[dict[str, Any]] = []
+    for path in sorted(rollouts_dir.glob("rollouts_rank*.jsonl")):
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    rows.append(json.loads(line))
+    success = Counter(str(row.get("success", False)) for row in rows)
+    sources = Counter(str(row.get("source", "unknown")) for row in rows)
+    returns = Counter(round(float(row.get("task_return", 0.0)), 6) for row in rows)
+    sequence_counts: Counter[str] = Counter()
+    event_decisions: Counter[str] = Counter()
+    for row in rows:
+        sequence: list[str] = []
+        for step in row.get("steps", []):
+            action = step.get("action") or {}
+            key = f"{step.get('event_kind')}:{action.get('decision')}"
+            sequence.append(key)
+            event_decisions[key] += 1
+        sequence_counts["|".join(sequence)] += 1
+    return {
+        "rollout_count": len(rows),
+        "success_counts": dict(success),
+        "source_counts": dict(sources),
+        "top_returns": [
+            {"return": value, "count": count}
+            for value, count in returns.most_common(20)
+        ],
+        "top_action_sequences": [
+            {"sequence": value, "count": count}
+            for value, count in sequence_counts.most_common(20)
+        ],
+        "event_decisions": [
+            {"event_decision": value, "count": count}
+            for value, count in event_decisions.most_common(50)
+        ],
+    }
 
 
 def _save_adapter(
@@ -935,10 +1301,60 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
     )
 
     output_dir = config.paths.output_dir
+    run_id = _run_id()
+    run_dir = output_dir / "runs" / run_id
+    curves_dir = run_dir / "curves"
+    rollouts_dir = run_dir / "rollouts"
     if accelerator.is_main_process:
         output_dir.mkdir(parents=True, exist_ok=True)
+        curves_dir.mkdir(parents=True, exist_ok=True)
+        rollouts_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "audit.json").write_text(
             json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        (run_dir / "audit.json").write_text(
+            json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        (run_dir / "run_manifest.json").write_text(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "created_at_utc": datetime.utcnow().isoformat(timespec="seconds")
+                    + "Z",
+                    "output_dir": str(output_dir),
+                    "run_dir": str(run_dir),
+                    "config": {
+                        "iterations": config.train.iterations,
+                        "group_size": config.rollout.group_size,
+                        "groups_per_iteration": config.rollout.groups_per_iteration,
+                        "max_episode_steps": config.rollout.max_episode_steps,
+                        "temperature": config.rollout.temperature,
+                        "top_p": config.rollout.top_p,
+                        "eval_steps": config.train.eval_steps,
+                        "eval_scenario_limit": config.train.eval_scenario_limit,
+                        "save_steps": config.train.save_steps,
+                        "num_processes": config.hardware.num_processes,
+                        "learning_rate": config.train.learning_rate,
+                        "kl_coefficient": config.train.kl_coefficient,
+                    },
+                    "paths": {
+                        "model_path": str(config.paths.model_path),
+                        "sft_checkpoint": str(config.paths.sft_checkpoint),
+                        "train_file": str(config.paths.train_file),
+                        "dev_file": str(config.paths.dev_file),
+                        "test_file": str(config.paths.test_file),
+                        "readiness_report": str(config.paths.readiness_report),
+                    },
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(
+            "[stage2] run initialized "
+            f"run_id={run_id} output_dir={output_dir} run_dir={run_dir}",
+            flush=True,
         )
     accelerator.wait_for_everyone()
     start_iteration = 0
@@ -966,6 +1382,9 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
         controller.multipliers.update(saved_multipliers)
 
     metrics_path = output_dir / "metrics.jsonl"
+    run_metrics_path = curves_dir / "metrics.jsonl"
+    run_metrics_csv_path = curves_dir / "metrics.csv"
+    rollout_path = rollouts_dir / f"rollouts_rank{accelerator.process_index:03d}.jsonl"
     randomizer = random.Random(config.seed + accelerator.process_index * 100_003)
     for _ in range(start_iteration * config.rollout.groups_per_iteration):
         randomizer.randrange(len(train_scenarios))
@@ -979,6 +1398,7 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
             parameter_group["lr"] = current_learning_rate
         unwrapped = accelerator.unwrap_model(policy)
         trajectories: list[HFRolloutTrajectory] = []
+        trajectory_metadata: list[tuple[int, int, RLScenario, int]] = []
         group_ids: list[int] = []
         for group_index in range(config.rollout.groups_per_iteration):
             scenario = train_scenarios[randomizer.randrange(len(train_scenarios))]
@@ -990,8 +1410,8 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                     + group_index * config.rollout.group_size
                     + sample_index
                 )
-                trajectories.append(
-                    _collect_trajectory(
+                if sample_index == 0:
+                    trajectory = _collect_expert_trajectory(
                         unwrapped,
                         reference,
                         tokenizer,
@@ -1000,6 +1420,19 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                         accelerator.device,
                         rollout_seed,
                     )
+                else:
+                    trajectory = _collect_trajectory(
+                        unwrapped,
+                        reference,
+                        tokenizer,
+                        scenario,
+                        config,
+                        accelerator.device,
+                        rollout_seed,
+                    )
+                trajectories.append(trajectory)
+                trajectory_metadata.append(
+                    (group_index, sample_index, scenario, rollout_seed)
                 )
                 group_ids.append(group_index)
 
@@ -1008,6 +1441,28 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
             for trajectory in trajectories
         ]
         advantages = grouped_advantages(np.asarray(scores), np.asarray(group_ids))
+        for trajectory, metadata, score, advantage in zip(
+            trajectories,
+            trajectory_metadata,
+            scores,
+            advantages,
+            strict=True,
+        ):
+            group_index, sample_index, scenario, rollout_seed = metadata
+            _append_jsonl(
+                rollout_path,
+                _rollout_payload(
+                    iteration=iteration + 1,
+                    process_index=accelerator.process_index,
+                    group_index=group_index,
+                    sample_index=sample_index,
+                    scenario=scenario,
+                    seed=rollout_seed,
+                    trajectory=trajectory,
+                    score=float(score),
+                    advantage=float(advantage),
+                ),
+            )
         samples = [
             HFTrainingSample(experience, float(advantage))
             for trajectory, advantage in zip(trajectories, advantages, strict=True)
@@ -1130,9 +1585,22 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
 
         should_evaluate = (iteration + 1) % config.train.eval_steps == 0
         if should_evaluate:
-            dev_metrics = _evaluate_scenarios(
-                accelerator, policy, tokenizer, dev_scenarios, config
-            )
+            try:
+                dev_metrics = _evaluate_scenarios(
+                    accelerator,
+                    policy,
+                    tokenizer,
+                    dev_scenarios,
+                    config,
+                    limit=config.train.eval_scenario_limit,
+                )
+            except Exception:
+                if accelerator.is_main_process:
+                    print(
+                        f"[stage2] dev eval failed iteration={iteration + 1}",
+                        flush=True,
+                    )
+                raise
             row.update({f"dev_{key}": value for key, value in dev_metrics.items()})
             dev_score = (
                 dev_metrics["success_rate"]
@@ -1144,9 +1612,27 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                 _save_adapter(accelerator, policy, tokenizer, output_dir / "best")
         if accelerator.is_main_process:
             _append_jsonl(metrics_path, row)
+            _append_jsonl(run_metrics_path, row)
+            _append_csv(run_metrics_csv_path, row)
+            print(
+                "[stage2] "
+                f"iter={row['iteration']}/{config.train.iterations} "
+                f"lr={row['learning_rate']:.3e} "
+                f"return={row['mean_return']:.4f} "
+                f"score={row['mean_penalized_score']:.4f} "
+                f"success={row['success_rate']:.4f} "
+                f"parse={row['parse_rate']:.4f} "
+                f"reward_var={row['group_reward_variance']:.6f} "
+                f"policy_loss={row['policy_loss']:.6f} "
+                f"kl={row['sampled_kl']:.6f} "
+                f"false_update={row.get('cost_false_update', 0.0):.4f} "
+                f"stall={row.get('cost_stall', 0.0):.4f}",
+                flush=True,
+            )
 
         if (iteration + 1) % config.train.save_steps == 0:
-            state_dir = output_dir / f"state-{iteration + 1:06d}"
+            state_name = f"state-{iteration + 1:06d}"
+            state_dir = output_dir / state_name
             accelerator.save_state(str(state_dir))
             accelerator.wait_for_everyone()
             if accelerator.is_main_process:
@@ -1166,13 +1652,31 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                     ),
                     encoding="utf-8",
                 )
+                run_state_link = run_dir / state_name
+                if not run_state_link.exists():
+                    run_state_link.symlink_to(state_dir, target_is_directory=True)
                 _prune_states(output_dir, config.train.save_total_limit)
             accelerator.wait_for_everyone()
 
     _save_adapter(accelerator, policy, tokenizer, output_dir / "final")
+    _save_adapter(accelerator, policy, tokenizer, run_dir / "final")
+    rollout_analysis: dict[str, Any] | None = None
+    if accelerator.is_main_process:
+        rollout_analysis = _analyze_rollouts(rollouts_dir)
+        (run_dir / "rollout_analysis.json").write_text(
+            json.dumps(rollout_analysis, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(
+            "[stage2] rollout analysis written "
+            f"path={run_dir / 'rollout_analysis.json'}",
+            flush=True,
+        )
     return {
         "iterations": config.train.iterations,
         "best_dev_score": best_dev_score,
         "output_dir": str(output_dir),
+        "run_dir": str(run_dir),
+        "rollout_analysis": rollout_analysis,
         "audit": audit,
     }

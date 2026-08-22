@@ -14,7 +14,12 @@ from ..core.types import (
     RevisionOutput,
 )
 from ..rl_data.schema import RLScenario, ScenarioEvent
-from ..training.rewards import belief_consistency, potential_difference, zero_costs
+from ..training.rewards import (
+    belief_consistency,
+    oracle_gap,
+    potential_difference,
+    zero_costs,
+)
 from .revision_env import RevisionStep
 
 
@@ -178,6 +183,25 @@ class ScenarioRevisionEnvironment:
         if invalid_tool:
             costs["invalid_patch"] = 1.0
 
+        if not invalid_format and result.executed:
+            if output.decision.value == expected_decision:
+                reward += 0.10
+            else:
+                reward -= 0.10
+            if expected_decision == Decision.HOLD.value:
+                if can_verify:
+                    reward += 0.30
+                elif output.decision is Decision.IGNORE:
+                    reward -= 0.25
+                elif output.decision is Decision.UPDATE:
+                    reward -= 0.35
+                elif output.decision is Decision.HOLD:
+                    reward -= 0.20
+            elif expected_decision == Decision.IGNORE.value and output.decision is Decision.HOLD:
+                reward -= 0.15
+            elif expected_decision == Decision.UPDATE.value and output.decision is Decision.IGNORE:
+                reward -= 0.20
+
         budget.steps_remaining = max(0, budget.steps_remaining - 1)
         budget.tokens_remaining = max(0, budget.tokens_remaining - token_cost)
         transition = "next_event"
@@ -205,6 +229,11 @@ class ScenarioRevisionEnvironment:
                 scenario.risk.dependent_fields,
             ) == 1.0
             reward += float(success)
+            reward -= oracle_gap(
+                self._state,
+                scenario.oracle_state,
+                scenario.risk.dependent_fields,
+            )
             transition = "terminal"
         else:
             next_context = self._current_context()

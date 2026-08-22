@@ -1,0 +1,73 @@
+nohup: ignoring input
+/usr/local/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (1.26.20) or chardet (7.6.0)/charset_normalizer (3.4.4) doesn't match a supported version!
+  warnings.warn(
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+/usr/local/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (1.26.20) or chardet (7.6.0)/charset_normalizer (3.4.4) doesn't match a supported version!
+  warnings.warn(
+Detected kernel version 5.4.210, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:01,  1.50it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:01<00:00,  1.22it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:01<00:00,  1.84it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 33.80it/s]
+[stage2] run initialized run_id=20260822_090533 output_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b run_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b/runs/20260822_090533
+[stage2] iter=1/200 lr=8.333e-07 return=0.2063 score=0.2063 success=0.1250 parse=0.9091 reward_var=0.893414 policy_loss=-0.103341 kl=0.000601 false_update=0.0000 stall=0.1250
+[stage2] iter=2/200 lr=1.667e-06 return=0.1904 score=0.1809 success=0.2500 parse=0.9038 reward_var=1.846990 policy_loss=-0.122114 kl=0.000905 false_update=0.0000 stall=0.3125
+[stage2] iter=3/200 lr=2.500e-06 return=0.2733 score=0.2656 success=0.1250 parse=0.9697 reward_var=0.781787 policy_loss=-0.185447 kl=0.003545 false_update=0.0000 stall=0.0625
+[stage2] iter=4/200 lr=3.333e-06 return=-0.0528 score=-0.0690 success=0.1250 parse=0.9492 reward_var=1.080063 policy_loss=-0.166221 kl=0.003868 false_update=0.0000 stall=0.3125
+[stage2] iter=5/200 lr=4.167e-06 return=0.6126 score=0.5874 success=0.3750 parse=0.9841 reward_var=2.146150 policy_loss=-0.161031 kl=0.004970 false_update=0.0000 stall=0.6250
+[stage2] iter=6/200 lr=5.000e-06 return=0.7489 score=0.7151 success=0.3750 parse=1.0000 reward_var=1.484006 policy_loss=-0.240319 kl=0.003095 false_update=0.0000 stall=0.4375
+[stage2] iter=7/200 lr=5.000e-06 return=0.5716 score=0.5461 success=0.3125 parse=1.0000 reward_var=2.001322 policy_loss=-0.199029 kl=0.008640 false_update=0.0625 stall=0.2500
+[stage2] iter=8/200 lr=4.999e-06 return=0.6303 score=0.6295 success=0.1875 parse=1.0000 reward_var=0.865239 policy_loss=-0.161977 kl=0.020156 false_update=0.3125 stall=0.0000
+[stage2] iter=9/200 lr=4.997e-06 return=0.0520 score=-0.0010 success=0.1875 parse=1.0000 reward_var=1.475285 policy_loss=-0.094015 kl=0.015313 false_update=0.0000 stall=0.5000
+[stage2] iter=10/200 lr=4.995e-06 return=0.3830 score=0.2795 success=0.1875 parse=1.0000 reward_var=1.430072 policy_loss=-0.053922 kl=0.005425 false_update=0.0000 stall=0.7500
+[stage2] iter=11/200 lr=4.992e-06 return=1.7307 score=1.7188 success=0.6875 parse=1.0000 reward_var=1.062722 policy_loss=-0.076644 kl=0.016694 false_update=0.0000 stall=0.0625
+[stage2] iter=12/200 lr=4.988e-06 return=1.2235 score=1.1104 success=0.5625 parse=0.9853 reward_var=1.691248 policy_loss=-0.051317 kl=0.012276 false_update=0.0000 stall=0.5625
+[stage2] iter=13/200 lr=4.984e-06 return=0.3140 score=0.1320 success=0.1875 parse=1.0000 reward_var=1.288047 policy_loss=0.005166 kl=0.015893 false_update=0.0000 stall=0.8125
+[stage2] iter=14/200 lr=4.979e-06 return=1.6054 score=1.5001 success=0.5625 parse=1.0000 reward_var=0.820987 policy_loss=-0.017426 kl=0.017639 false_update=0.0000 stall=0.3750
+[stage2] iter=15/200 lr=4.973e-06 return=1.7384 score=1.7384 success=0.6875 parse=1.0000 reward_var=1.073737 policy_loss=-0.237752 kl=0.056880 false_update=0.0000 stall=0.0000
+[stage2] iter=16/200 lr=4.967e-06 return=1.3432 score=1.3063 success=0.5000 parse=1.0000 reward_var=1.345460 policy_loss=-0.076431 kl=0.062620 false_update=0.0000 stall=0.1250
+[stage2] iter=17/200 lr=4.960e-06 return=0.2616 score=0.2616 success=0.1250 parse=1.0000 reward_var=0.703276 policy_loss=-0.396347 kl=0.008898 false_update=0.0000 stall=0.0000
+[stage2] iter=18/200 lr=4.953e-06 return=1.0794 score=0.9879 success=0.3750 parse=1.0000 reward_var=1.615771 policy_loss=-0.014496 kl=0.015814 false_update=0.3125 stall=0.3125
+[stage2] iter=19/200 lr=4.945e-06 return=2.1360 score=1.9463 success=0.9375 parse=1.0000 reward_var=0.437784 policy_loss=0.009983 kl=0.021596 false_update=0.0000 stall=0.5625
+[stage2] dev eval start scenarios=200 limit=all
+[stage2] dev eval progress 10/200
+[stage2] dev eval progress 20/200
+[stage2] dev eval progress 30/200
+[stage2] dev eval progress 40/200
+[stage2] dev eval progress 50/200
+[stage2] dev eval progress 60/200
+[stage2] dev eval progress 70/200
+[stage2] dev eval progress 80/200
+[stage2] dev eval progress 90/200
+[stage2] dev eval progress 100/200
+[stage2] dev eval progress 110/200
+[stage2] dev eval progress 120/200
+[stage2] dev eval progress 130/200
+[stage2] dev eval progress 140/200
+[stage2] dev eval progress 150/200
+[stage2] dev eval progress 160/200
+[stage2] dev eval progress 170/200
+[stage2] dev eval progress 180/200
+[stage2] dev eval progress 190/200
+[stage2] dev eval progress 200/200
+[stage2] dev eval done episodes=200 success=0.7100 parse=0.9902 return=1.8766
+[stage2] iter=20/200 lr=4.936e-06 return=2.3522 score=2.3522 success=0.9375 parse=1.0000 reward_var=0.330856 policy_loss=-0.070576 kl=0.055788 false_update=0.0000 stall=0.0000
+Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+[stage2] iter=21/200 lr=4.927e-06 return=1.5907 score=1.5907 success=0.5625 parse=1.0000 reward_var=0.232667 policy_loss=-0.021883 kl=1.094409 false_update=0.0000 stall=0.0000
+[stage2] iter=22/200 lr=4.917e-06 return=2.4888 score=2.4888 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.022499 false_update=0.0000 stall=0.0000
+[stage2] iter=23/200 lr=4.906e-06 return=1.8464 score=1.8464 success=0.7500 parse=1.0000 reward_var=0.803743 policy_loss=-0.130232 kl=0.032065 false_update=0.0000 stall=0.0000
+[stage2] iter=24/200 lr=4.895e-06 return=1.8218 score=1.7253 success=0.7500 parse=1.0000 reward_var=0.741320 policy_loss=-0.023922 kl=0.047411 false_update=0.0000 stall=0.2500
+[stage2] iter=25/200 lr=4.883e-06 return=1.5849 score=1.4808 success=0.6250 parse=0.9872 reward_var=2.008509 policy_loss=-0.008183 kl=0.021112 false_update=0.0000 stall=0.3125
+[stage2] iter=26/200 lr=4.870e-06 return=2.1575 score=2.1569 success=0.8750 parse=1.0000 reward_var=0.732564 policy_loss=-0.163148 kl=0.029892 false_update=0.0625 stall=0.0000
+[stage2] iter=27/200 lr=4.857e-06 return=1.6209 score=1.4430 success=0.6250 parse=1.0000 reward_var=0.806485 policy_loss=0.050755 kl=0.028539 false_update=0.0000 stall=0.5000
+[stage2] iter=28/200 lr=4.843e-06 return=1.8990 score=1.7853 success=0.6875 parse=1.0000 reward_var=0.631020 policy_loss=0.048897 kl=0.014737 false_update=0.0000 stall=0.3125
+[stage2] iter=29/200 lr=4.829e-06 return=1.8258 score=1.6390 success=0.6875 parse=1.0000 reward_var=0.683390 policy_loss=0.103084 kl=0.067414 false_update=0.0625 stall=0.4375
+[stage2] iter=30/200 lr=4.814e-06 return=2.0178 score=1.9413 success=0.8125 parse=1.0000 reward_var=1.102354 policy_loss=-0.009617 kl=0.014374 false_update=0.0000 stall=0.1875
+[stage2] iter=31/200 lr=4.798e-06 return=2.3134 score=2.2875 success=0.9375 parse=1.0000 reward_var=0.592027 policy_loss=-0.025630 kl=0.042309 false_update=0.0000 stall=0.0625
+[stage2] iter=32/200 lr=4.782e-06 return=1.6737 score=1.6737 success=0.6250 parse=1.0000 reward_var=0.444829 policy_loss=-0.057052 kl=0.076190 false_update=0.0000 stall=0.0000
+[stage2] iter=33/200 lr=4.765e-06 return=1.7102 score=1.7102 success=0.6875 parse=1.0000 reward_var=1.320691 policy_loss=-0.239027 kl=0.070100 false_update=0.0000 stall=0.0000
+[stage2] iter=34/200 lr=4.747e-06 return=2.3303 score=2.3303 success=0.9375 parse=1.0000 reward_var=0.351638 policy_loss=-0.074036 kl=0.032546 false_update=0.0000 stall=0.0000
+[stage2] iter=35/200 lr=4.729e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.034031 false_update=0.0000 stall=0.0000
+[stage2] iter=36/200 lr=4.711e-06 return=2.3722 score=2.3722 success=0.9375 parse=1.0000 reward_var=0.204628 policy_loss=0.021080 kl=0.045516 false_update=0.0625 stall=0.0000
+[stage2] iter=37/200 lr=4.692e-06 return=1.7767 score=1.6372 success=0.6250 parse=1.0000 reward_var=0.508303 policy_loss=0.052677 kl=0.032925 false_update=0.0000 stall=0.3750

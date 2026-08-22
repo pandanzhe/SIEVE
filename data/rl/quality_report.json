@@ -6,25 +6,40 @@
   },
   "derived_secondary_scenarios": 2100,
   "distractor_split_violations": 0,
-  "eligible_source_rows": 2700,
+  "eligible_source_rows": 4318,
   "event_kind_counts": {
     "dev": {
-      "ambiguous": 200,
-      "authoritative": 200,
-      "stale_conflict": 200,
-      "wrong_entity": 200
+      "ambiguous": 120,
+      "ambiguous_noncritical": 40,
+      "authoritative": 160,
+      "complex_stale_conflict": 40,
+      "delayed_contamination": 40,
+      "downstream_precondition": 40,
+      "stale_conflict": 80,
+      "verification_budget_choice": 40,
+      "wrong_entity": 160
     },
     "test": {
-      "ambiguous": 300,
-      "authoritative": 300,
-      "stale_conflict": 300,
-      "wrong_entity": 300
+      "ambiguous": 180,
+      "ambiguous_noncritical": 60,
+      "authoritative": 240,
+      "complex_stale_conflict": 60,
+      "delayed_contamination": 60,
+      "downstream_precondition": 60,
+      "stale_conflict": 120,
+      "verification_budget_choice": 60,
+      "wrong_entity": 240
     },
     "train": {
-      "ambiguous": 1600,
-      "authoritative": 1600,
-      "stale_conflict": 1600,
-      "wrong_entity": 1600
+      "ambiguous": 960,
+      "ambiguous_noncritical": 320,
+      "authoritative": 1280,
+      "complex_stale_conflict": 320,
+      "delayed_contamination": 320,
+      "downstream_precondition": 320,
+      "stale_conflict": 640,
+      "verification_budget_choice": 320,
+      "wrong_entity": 1280
     }
   },
   "macro_domain_counts": {
@@ -45,11 +60,70 @@
     }
   },
   "multi_field_base_tasks": 0,
-  "schema_version": "sieve.rl.scenario.v1",
-  "split_base_tasks": {
-    "dev": 27,
-    "test": 33,
-    "train": 152
+  "raw_enrichment_rows": 1618,
+  "scenario_source_counts": {
+    "dev": {
+      "AgentBench": 10,
+      "ToolBench": 10,
+      "WebArena": 46,
+      "car-bench": 10,
+      "tau2-bench": 87,
+      "tau3-bench": 37
+    },
+    "test": {
+      "AgentBench": 16,
+      "ToolBench": 16,
+      "WebArena": 87,
+      "car-bench": 13,
+      "tau2-bench": 121,
+      "tau3-bench": 47
+    },
+    "train": {
+      "AgentBench": 88,
+      "ToolBench": 87,
+      "WebArena": 433,
+      "car-bench": 58,
+      "tau2-bench": 678,
+      "tau3-bench": 256
+    }
   },
-  "unique_base_tasks": 212
+  "scenario_template_counts": {
+    "dev": {
+      "complex_stale_conflict": 40,
+      "delayed_contamination": 40,
+      "multi_field_dependency": 40,
+      "no_auto_repair": 40,
+      "verification_budget_choice": 40
+    },
+    "test": {
+      "complex_stale_conflict": 60,
+      "delayed_contamination": 60,
+      "multi_field_dependency": 60,
+      "no_auto_repair": 60,
+      "verification_budget_choice": 60
+    },
+    "train": {
+      "complex_stale_conflict": 320,
+      "delayed_contamination": 320,
+      "multi_field_dependency": 320,
+      "no_auto_repair": 320,
+      "verification_budget_choice": 320
+    }
+  },
+  "schema_version": "sieve.rl.scenario.v1",
+  "sft_source_rows": 6000,
+  "source_dataset_counts": {
+    "AgentBench": 300,
+    "ToolBench": 328,
+    "WebArena": 335,
+    "car-bench": 675,
+    "tau2-bench": 655,
+    "tau3-bench": 2025
+  },
+  "split_base_tasks": {
+    "dev": 135,
+    "test": 201,
+    "train": 1030
+  },
+  "unique_base_tasks": 1827
 }

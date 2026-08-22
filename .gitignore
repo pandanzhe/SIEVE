@@ -10,8 +10,30 @@ __pycache__/
 .superpowers/
 outputs/
 tmp/
-model/*
+
+# Local model weights and training checkpoints
+model/**
+!model/
 !model/README.md
+outputs/**
+checkpoints/**
+checkpoint-*/
+state-*/
+**/checkpoint-*/
+**/state-*/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.gguf
+pytorch_model*.bin
+adapter_model.*
+optimizer.pt
+optimizer.bin
+scheduler.pt
+scheduler.bin
 
 # IDE
 .vscode/

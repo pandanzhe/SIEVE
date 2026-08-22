@@ -185,3 +185,41 @@ bash scripts/train_stage2.sh
 ```
 
 The default profile is two A100 40G GPUs. Use `SIEVE_NUM_GPUS=1 bash scripts/train_stage2.sh` for the one-GPU fallback. Neither local validation nor corpus construction loads Qwen or starts training; the GPU readiness and training commands intentionally fail until `model/`, the Stage-1 adapter, pinned dependencies, and the generated readiness report are present.
+
+
+## loss含义
+train_loss
+总 loss。当前代码里它是加权和：
+
+  loss = decision_loss * weight_decision
+       + structure_loss * weight_structure
+       + value_loss * weight_patch_value
+
+  你现在的配置里三个权重都是 1.0，所以基本就是三个目标相加。日志里没有打印 decision_loss，所以你看
+  到：
+
+  train_loss=0.000046
+  train_structure_loss=0.000034
+  train_value_loss=0.000012
+
+  它们相加刚好约等于 0.000046，说明这一步的 decision_loss 可能非常接近 0，或者小到日志精度下不明
+  显。
+
+  train_structure_loss
+  这是对结构化 JSON 动作的“结构 token”做 causal LM loss。它主要约束模型输出格式和动作骨架，比如：
+
+  {"decision":"UPDATE","affected_fields":[...],"patches":[...],"verification":...}
+
+  它学的是：字段名、JSON 格式、decision/patch/verification 的结构表达是否对。
+
+  train_value_loss
+  这是对 patch value 里面可写值 token 的 causal LM loss。它主要约束模型在 UPDATE 时写入正确值，例如
+  把某个字段设成 oracle/观察支持的值。相比 structure loss，它更关注具体 value 内容，而不是 JSON 框
+  架。
+
+  还有一个你没看到的 decision_loss
+  代码里实际存在：
+  result["decision_loss"] = loss
+  它是 UPDATE / HOLD / IGNORE 三分类 head 的交叉熵。当前日志打印时只打印了 loss、structure_loss、
+  value_loss，没有打印 decision_loss，所以日志里看不到它。这个可以补上，建议打印出来，否则很难判断
+  模型到底是“动作分类学会了”，还是只是 JSON 生成学会了。

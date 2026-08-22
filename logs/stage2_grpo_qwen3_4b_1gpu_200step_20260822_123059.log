@@ -1,0 +1,96 @@
+nohup: ignoring input
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:03<00:06,  3.25s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:07<00:03,  3.88s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:07<00:00,  2.19s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:07<00:00,  2.59s/it]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  9.37it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00,  9.11it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 10.74it/s]
+[stage2] run initialized run_id=20260822_123403 output_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b run_dir=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b/runs/20260822_123403
+[stage2] iter=1/200 lr=8.333e-07 return=0.2013 score=0.2013 success=0.1250 parse=0.8939 reward_var=0.888493 policy_loss=-0.105906 kl=0.000333 false_update=0.0625 stall=0.0625
+[stage2] iter=2/200 lr=1.667e-06 return=0.0989 score=0.0863 success=0.1875 parse=0.8846 reward_var=1.573545 policy_loss=-0.079445 kl=0.000706 false_update=0.0000 stall=0.2500
+[stage2] iter=3/200 lr=2.500e-06 return=0.2790 score=0.2744 success=0.1250 parse=0.9848 reward_var=0.777261 policy_loss=-0.193728 kl=0.001887 false_update=0.0000 stall=0.0625
+[stage2] iter=4/200 lr=3.333e-06 return=-0.1242 score=-0.1346 success=0.1250 parse=0.9655 reward_var=1.009960 policy_loss=-0.183345 kl=0.001840 false_update=0.0000 stall=0.2500
+[stage2] iter=5/200 lr=4.167e-06 return=0.6397 score=0.6279 success=0.3750 parse=1.0000 reward_var=2.148696 policy_loss=-0.145588 kl=0.003880 false_update=0.0000 stall=0.5625
+[stage2] iter=6/200 lr=5.000e-06 return=0.4512 score=0.4295 success=0.2500 parse=1.0000 reward_var=1.409420 policy_loss=-0.188443 kl=0.001823 false_update=0.0000 stall=0.3750
+[stage2] iter=7/200 lr=5.000e-06 return=0.6419 score=0.6269 success=0.3125 parse=1.0000 reward_var=1.788312 policy_loss=-0.217395 kl=0.007191 false_update=0.0625 stall=0.1875
+[stage2] iter=8/200 lr=4.999e-06 return=0.5298 score=0.5290 success=0.1875 parse=1.0000 reward_var=1.028818 policy_loss=-0.195383 kl=0.018335 false_update=0.3125 stall=0.0000
+[stage2] iter=9/200 lr=4.997e-06 return=0.0520 score=0.0125 success=0.1875 parse=1.0000 reward_var=1.453323 policy_loss=-0.094998 kl=0.012061 false_update=0.0000 stall=0.5000
+[stage2] iter=10/200 lr=4.995e-06 return=0.5743 score=0.5050 success=0.2500 parse=1.0000 reward_var=1.486826 policy_loss=-0.047144 kl=0.005059 false_update=0.0000 stall=0.6250
+[stage2] iter=11/200 lr=4.992e-06 return=1.7307 score=1.7211 success=0.6875 parse=1.0000 reward_var=1.053990 policy_loss=-0.076289 kl=0.016734 false_update=0.0000 stall=0.0625
+[stage2] iter=12/200 lr=4.988e-06 return=1.2706 score=1.2050 success=0.5625 parse=1.0000 reward_var=1.720135 policy_loss=-0.040331 kl=0.010637 false_update=0.0000 stall=0.4375
+[stage2] iter=13/200 lr=4.984e-06 return=0.4124 score=0.2797 success=0.1875 parse=1.0000 reward_var=1.251393 policy_loss=-0.010778 kl=0.016453 false_update=0.0000 stall=0.7500
+[stage2] iter=14/200 lr=4.979e-06 return=1.6054 score=1.5196 success=0.5625 parse=1.0000 reward_var=0.799425 policy_loss=-0.018165 kl=0.019121 false_update=0.0000 stall=0.3750
+[stage2] iter=15/200 lr=4.973e-06 return=1.8907 score=1.8907 success=0.7500 parse=1.0000 reward_var=1.027307 policy_loss=-0.225416 kl=0.054326 false_update=0.0000 stall=0.0000
+[stage2] iter=16/200 lr=4.967e-06 return=2.3006 score=2.2854 success=0.9375 parse=1.0000 reward_var=0.531748 policy_loss=-0.027874 kl=0.037956 false_update=0.0000 stall=0.0625
+[stage2] iter=17/200 lr=4.960e-06 return=0.2616 score=0.2616 success=0.1250 parse=1.0000 reward_var=0.703276 policy_loss=-0.395952 kl=0.009305 false_update=0.0000 stall=0.0000
+[stage2] iter=18/200 lr=4.953e-06 return=1.0794 score=1.0058 success=0.3750 parse=1.0000 reward_var=1.577335 policy_loss=-0.015140 kl=0.034568 false_update=0.3125 stall=0.3125
+[stage2] iter=19/200 lr=4.945e-06 return=2.1360 score=1.9934 success=0.9375 parse=1.0000 reward_var=0.426743 policy_loss=0.008195 kl=0.027333 false_update=0.0000 stall=0.5625
+[stage2] dev eval start scenarios=200 limit=all
+[stage2] dev eval progress 10/200
+[stage2] dev eval progress 20/200
+[stage2] dev eval progress 30/200
+[stage2] dev eval progress 40/200
+[stage2] dev eval progress 50/200
+[stage2] dev eval progress 60/200
+[stage2] dev eval progress 70/200
+[stage2] dev eval progress 80/200
+[stage2] dev eval progress 90/200
+[stage2] dev eval progress 100/200
+[stage2] dev eval progress 110/200
+[stage2] dev eval progress 120/200
+[stage2] dev eval progress 130/200
+[stage2] dev eval progress 140/200
+[stage2] dev eval progress 150/200
+[stage2] dev eval progress 160/200
+[stage2] dev eval progress 170/200
+[stage2] dev eval progress 180/200
+[stage2] dev eval progress 190/200
+[stage2] dev eval progress 200/200
+[stage2] dev eval done episodes=200 success=0.6950 parse=0.9891 return=1.8741
+[stage2] iter=20/200 lr=4.936e-06 return=1.8686 score=1.8626 success=0.6875 parse=1.0000 reward_var=0.509131 policy_loss=-0.010177 kl=0.051133 false_update=0.2500 stall=0.0000
+Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+[stage2] iter=21/200 lr=4.927e-06 return=1.1071 score=1.0968 success=0.3125 parse=1.0000 reward_var=0.720623 policy_loss=0.007260 kl=0.061377 false_update=0.2500 stall=0.0000
+[stage2] iter=22/200 lr=4.917e-06 return=2.0435 score=2.0097 success=0.8750 parse=1.0000 reward_var=1.376815 policy_loss=-0.075984 kl=0.023835 false_update=0.0000 stall=0.1250
+[stage2] iter=23/200 lr=4.906e-06 return=2.0049 score=2.0049 success=0.8125 parse=1.0000 reward_var=0.753509 policy_loss=-0.121977 kl=0.035781 false_update=0.0000 stall=0.0000
+[stage2] iter=24/200 lr=4.895e-06 return=1.9803 score=1.9030 success=0.8125 parse=1.0000 reward_var=0.641463 policy_loss=-0.007102 kl=0.049741 false_update=0.0000 stall=0.2500
+[stage2] iter=25/200 lr=4.883e-06 return=1.8076 score=1.7360 success=0.6875 parse=0.9873 reward_var=1.377198 policy_loss=0.002017 kl=0.021729 false_update=0.0000 stall=0.2500
+[stage2] iter=26/200 lr=4.870e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.018627 false_update=0.0000 stall=0.0000
+[stage2] iter=27/200 lr=4.857e-06 return=1.9879 score=1.8963 success=0.7500 parse=1.0000 reward_var=0.650106 policy_loss=0.098949 kl=0.049836 false_update=0.0000 stall=0.3125
+[stage2] iter=28/200 lr=4.843e-06 return=2.0158 score=1.9389 success=0.7500 parse=0.9875 reward_var=0.617354 policy_loss=0.037512 kl=0.022413 false_update=0.0000 stall=0.2500
+[stage2] iter=29/200 lr=4.829e-06 return=1.8258 score=1.7388 success=0.6875 parse=0.9861 reward_var=0.496951 policy_loss=0.063129 kl=0.048292 false_update=0.3125 stall=0.1875
+[stage2] iter=30/200 lr=4.814e-06 return=2.0178 score=1.9586 success=0.8125 parse=1.0000 reward_var=1.040394 policy_loss=-0.010247 kl=0.018141 false_update=0.0000 stall=0.1875
+[stage2] iter=31/200 lr=4.798e-06 return=2.0716 score=2.0436 success=0.8125 parse=1.0000 reward_var=0.933170 policy_loss=0.002632 kl=0.401688 false_update=0.1250 stall=0.0625
+[stage2] iter=32/200 lr=4.782e-06 return=2.1922 score=2.1922 success=0.8750 parse=1.0000 reward_var=0.504688 policy_loss=-0.077421 kl=0.039980 false_update=0.0000 stall=0.0000
+[stage2] iter=33/200 lr=4.765e-06 return=2.0224 score=2.0224 success=0.8125 parse=1.0000 reward_var=0.933664 policy_loss=-0.186525 kl=0.066329 false_update=0.0000 stall=0.0000
+[stage2] iter=34/200 lr=4.747e-06 return=2.4888 score=2.4888 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.021777 false_update=0.0000 stall=0.0000
+[stage2] iter=35/200 lr=4.729e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.033243 false_update=0.0000 stall=0.0000
+[stage2] iter=36/200 lr=4.711e-06 return=1.8886 score=1.8698 success=0.6875 parse=1.0000 reward_var=0.466299 policy_loss=0.029961 kl=0.035245 false_update=0.3125 stall=0.0000
+[stage2] iter=37/200 lr=4.692e-06 return=1.7767 score=1.6717 success=0.6250 parse=1.0000 reward_var=0.468930 policy_loss=0.052847 kl=0.033740 false_update=0.0000 stall=0.3750
+[stage2] iter=38/200 lr=4.672e-06 return=2.1445 score=2.1311 success=0.8125 parse=0.9167 reward_var=0.394420 policy_loss=0.052473 kl=0.023314 false_update=0.0000 stall=0.0000
+[stage2] iter=39/200 lr=4.651e-06 return=2.4972 score=2.4972 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.016983 false_update=0.0000 stall=0.0000
+[stage2] dev eval start scenarios=200 limit=all
+[stage2] dev eval progress 10/200
+[stage2] dev eval progress 20/200
+[stage2] dev eval progress 30/200
+[stage2] dev eval progress 40/200
+[stage2] dev eval progress 50/200
+[stage2] dev eval progress 60/200
+[stage2] dev eval progress 70/200
+[stage2] dev eval progress 80/200
+[stage2] dev eval progress 90/200
+[stage2] dev eval progress 100/200
+[stage2] dev eval progress 110/200
+[stage2] dev eval progress 120/200
+[stage2] dev eval progress 130/200
+[stage2] dev eval progress 140/200
+[stage2] dev eval progress 150/200
+[stage2] dev eval progress 160/200
+[stage2] dev eval progress 170/200
+[stage2] dev eval progress 180/200
+[stage2] dev eval progress 190/200
+[stage2] dev eval progress 200/200
+[stage2] dev eval done episodes=200 success=0.8500 parse=0.9913 return=2.1759
+[stage2] iter=40/200 lr=4.631e-06 return=2.5015 score=2.5015 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.020758 false_update=0.0000 stall=0.0000
+Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+[stage2] iter=41/200 lr=4.609e-06 return=1.6560 score=1.6387 success=0.6250 parse=1.0000 reward_var=0.534200 policy_loss=-0.053737 kl=0.031009 false_update=0.0000 stall=0.0625
+[stage2] iter=42/200 lr=4.587e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.023783 false_update=0.0000 stall=0.0000

@@ -1,0 +1,137 @@
+nohup: ignoring input
+PORT=51719
+/usr/bin/python
+/usr/bin/python
+2.7.1
+1.12.0
+4.57.1
+0.18.0
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 5.4.210, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+[sft-data] split=train records=5406 using=5376 dropped_tail=30 divisor=32
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:01,  1.75it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:01<00:00,  1.41it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:01<00:00,  2.12it/s]
+[sft-start] epochs=3 train_records=5376 dev_records=594 micro_batch_size=2 gradient_accumulation_steps=16 world_size=1 updates_per_epoch=168 total_updates=504 log_every=10 eval_steps=100
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-train] epoch=1/3 step=1/504 progress=0.20% train_loss=2.000249 train_structure_loss=1.989165 train_value_loss=0.000007 lr=6.667e-06,3.333e-05 elapsed=0m07s eta=1h01m14s
+[sft-train] epoch=1/3 step=10/504 progress=1.98% train_loss=4.723062 train_structure_loss=1.691807 train_value_loss=0.000004 lr=6.667e-05,3.333e-04 elapsed=1m03s eta=51m56s
+[sft-train] epoch=1/3 step=20/504 progress=3.97% train_loss=0.709500 train_structure_loss=0.200711 train_value_loss=0.000000 lr=9.997e-05,4.999e-04 elapsed=2m06s eta=50m57s
+[sft-train] epoch=1/3 step=30/504 progress=5.95% train_loss=0.115426 train_structure_loss=0.012846 train_value_loss=0.000041 lr=9.977e-05,4.988e-04 elapsed=3m11s eta=50m19s
+[sft-train] epoch=1/3 step=40/504 progress=7.94% train_loss=0.002164 train_structure_loss=0.002017 train_value_loss=0.000004 lr=9.936e-05,4.968e-04 elapsed=4m15s eta=49m19s
+[sft-train] epoch=1/3 step=50/504 progress=9.92% train_loss=0.014314 train_structure_loss=0.000337 train_value_loss=0.000000 lr=9.874e-05,4.937e-04 elapsed=5m19s eta=48m17s
+[sft-train] epoch=1/3 step=60/504 progress=11.90% train_loss=0.000381 train_structure_loss=0.000179 train_value_loss=0.000001 lr=9.792e-05,4.896e-04 elapsed=6m23s eta=47m18s
+[sft-train] epoch=1/3 step=70/504 progress=13.89% train_loss=0.000584 train_structure_loss=0.000333 train_value_loss=0.000116 lr=9.691e-05,4.846e-04 elapsed=7m27s eta=46m15s
+[sft-train] epoch=1/3 step=80/504 progress=15.87% train_loss=0.000870 train_structure_loss=0.000830 train_value_loss=0.000034 lr=9.570e-05,4.785e-04 elapsed=8m31s eta=45m11s
+[sft-train] epoch=1/3 step=90/504 progress=17.86% train_loss=0.000104 train_structure_loss=0.000103 train_value_loss=0.000000 lr=9.431e-05,4.715e-04 elapsed=9m35s eta=44m06s
+[sft-train] epoch=1/3 step=100/504 progress=19.84% train_loss=0.000107 train_structure_loss=0.000070 train_value_loss=0.000024 lr=9.273e-05,4.636e-04 elapsed=10m39s eta=43m02s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 1, "false_update_rate": 0.0, "loss": 8.85457546136229e-05, "score": 0.9999114542453864, "step": 100, "structure_loss": 6.908454292821102e-05, "value_loss": 9.857037001282457e-06}
+[sft-train] epoch=1/3 step=110/504 progress=21.83% train_loss=0.000049 train_structure_loss=0.000046 train_value_loss=0.000000 lr=9.097e-05,4.549e-04 elapsed=12m14s eta=43m51s
+[sft-train] epoch=1/3 step=120/504 progress=23.81% train_loss=0.000091 train_structure_loss=0.000091 train_value_loss=0.000000 lr=8.905e-05,4.452e-04 elapsed=13m17s eta=42m32s
+[sft-train] epoch=1/3 step=130/504 progress=25.79% train_loss=0.000054 train_structure_loss=0.000040 train_value_loss=0.000009 lr=8.696e-05,4.348e-04 elapsed=14m19s eta=41m13s
+[sft-train] epoch=1/3 step=140/504 progress=27.78% train_loss=0.000057 train_structure_loss=0.000039 train_value_loss=0.000016 lr=8.473e-05,4.236e-04 elapsed=15m22s eta=39m58s
+[sft-train] epoch=1/3 step=150/504 progress=29.76% train_loss=0.000041 train_structure_loss=0.000023 train_value_loss=0.000016 lr=8.234e-05,4.117e-04 elapsed=16m23s eta=38m41s
+[sft-train] epoch=1/3 step=160/504 progress=31.75% train_loss=0.000034 train_structure_loss=0.000021 train_value_loss=0.000012 lr=7.983e-05,3.991e-04 elapsed=17m26s eta=37m30s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 1, "false_update_rate": 0.0, "loss": 3.538488051686507e-05, "score": 0.9999646151194831, "step": 168, "structure_loss": 2.9729930829244622e-05, "value_loss": 4.227047164856502e-06}
+Removed shared tensor {'backbone.base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-train] epoch=2/3 step=170/504 progress=33.73% train_loss=0.000047 train_structure_loss=0.000028 train_value_loss=0.000014 lr=7.719e-05,3.860e-04 elapsed=19m18s eta=37m56s
+[sft-train] epoch=2/3 step=180/504 progress=35.71% train_loss=0.000028 train_structure_loss=0.000021 train_value_loss=0.000007 lr=7.444e-05,3.722e-04 elapsed=20m20s eta=36m36s
+[sft-train] epoch=2/3 step=190/504 progress=37.70% train_loss=0.000027 train_structure_loss=0.000019 train_value_loss=0.000000 lr=7.159e-05,3.580e-04 elapsed=21m22s eta=35m20s
+[sft-train] epoch=2/3 step=200/504 progress=39.68% train_loss=0.000045 train_structure_loss=0.000029 train_value_loss=0.000012 lr=6.865e-05,3.433e-04 elapsed=22m25s eta=34m05s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 2, "false_update_rate": 0.0, "loss": 2.938783595724849e-05, "score": 0.9999706121640427, "step": 200, "structure_loss": 2.4814600046340537e-05, "value_loss": 3.4435573928211052e-06}
+[sft-train] epoch=2/3 step=210/504 progress=41.67% train_loss=0.000046 train_structure_loss=0.000034 train_value_loss=0.000012 lr=6.563e-05,3.282e-04 elapsed=24m01s eta=33m37s
+[sft-train] epoch=2/3 step=220/504 progress=43.65% train_loss=0.000023 train_structure_loss=0.000022 train_value_loss=0.000000 lr=6.255e-05,3.128e-04 elapsed=25m03s eta=32m21s
+[sft-train] epoch=2/3 step=230/504 progress=45.63% train_loss=0.000024 train_structure_loss=0.000022 train_value_loss=0.000000 lr=5.942e-05,2.971e-04 elapsed=26m06s eta=31m05s
+[sft-train] epoch=2/3 step=240/504 progress=47.62% train_loss=0.000020 train_structure_loss=0.000019 train_value_loss=0.000000 lr=5.625e-05,2.812e-04 elapsed=27m10s eta=29m53s
+[sft-train] epoch=2/3 step=250/504 progress=49.60% train_loss=0.000041 train_structure_loss=0.000031 train_value_loss=0.000009 lr=5.305e-05,2.652e-04 elapsed=28m14s eta=28m41s
+[sft-train] epoch=2/3 step=260/504 progress=51.59% train_loss=0.000018 train_structure_loss=0.000013 train_value_loss=0.000004 lr=4.984e-05,2.492e-04 elapsed=29m17s eta=27m29s
+[sft-train] epoch=2/3 step=270/504 progress=53.57% train_loss=0.000025 train_structure_loss=0.000018 train_value_loss=0.000007 lr=4.663e-05,2.331e-04 elapsed=30m21s eta=26m18s
+[sft-train] epoch=2/3 step=280/504 progress=55.56% train_loss=0.000025 train_structure_loss=0.000017 train_value_loss=0.000007 lr=4.343e-05,2.172e-04 elapsed=31m25s eta=25m08s
+[sft-train] epoch=2/3 step=290/504 progress=57.54% train_loss=0.000026 train_structure_loss=0.000026 train_value_loss=0.000000 lr=4.027e-05,2.013e-04 elapsed=32m31s eta=24m00s
+[sft-train] epoch=2/3 step=300/504 progress=59.52% train_loss=0.000021 train_structure_loss=0.000020 train_value_loss=0.000000 lr=3.714e-05,1.857e-04 elapsed=33m35s eta=22m50s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 2, "false_update_rate": 0.0, "loss": 2.106948188450799e-05, "score": 0.9999789305181155, "step": 300, "structure_loss": 1.791879391260069e-05, "value_loss": 2.3027767832352324e-06}
+[sft-train] epoch=2/3 step=310/504 progress=61.51% train_loss=0.000021 train_structure_loss=0.000011 train_value_loss=0.000008 lr=3.406e-05,1.703e-04 elapsed=35m11s eta=22m01s
+[sft-train] epoch=2/3 step=320/504 progress=63.49% train_loss=0.000019 train_structure_loss=0.000013 train_value_loss=0.000005 lr=3.105e-05,1.553e-04 elapsed=36m14s eta=20m50s
+[sft-train] epoch=2/3 step=330/504 progress=65.48% train_loss=0.000024 train_structure_loss=0.000013 train_value_loss=0.000010 lr=2.812e-05,1.406e-04 elapsed=37m19s eta=19m40s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 2, "false_update_rate": 0.0, "loss": 1.9698168701934296e-05, "score": 0.999980301831298, "step": 336, "structure_loss": 1.6788870319029805e-05, "value_loss": 2.0959057130112617e-06}
+Removed shared tensor {'backbone.base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-train] epoch=3/3 step=340/504 progress=67.46% train_loss=0.000022 train_structure_loss=0.000015 train_value_loss=0.000006 lr=2.528e-05,1.264e-04 elapsed=39m14s eta=18m55s
+[sft-train] epoch=3/3 step=350/504 progress=69.44% train_loss=0.000022 train_structure_loss=0.000014 train_value_loss=0.000006 lr=2.254e-05,1.127e-04 elapsed=40m20s eta=17m45s
+[sft-train] epoch=3/3 step=360/504 progress=71.43% train_loss=0.000021 train_structure_loss=0.000014 train_value_loss=0.000006 lr=1.991e-05,9.957e-05 elapsed=41m24s eta=16m33s
+[sft-train] epoch=3/3 step=370/504 progress=73.41% train_loss=0.000021 train_structure_loss=0.000013 train_value_loss=0.000007 lr=1.741e-05,8.706e-05 elapsed=42m30s eta=15m23s
+[sft-train] epoch=3/3 step=380/504 progress=75.40% train_loss=0.000012 train_structure_loss=0.000011 train_value_loss=0.000000 lr=1.504e-05,7.522e-05 elapsed=43m35s eta=14m13s
+[sft-train] epoch=3/3 step=390/504 progress=77.38% train_loss=0.000019 train_structure_loss=0.000011 train_value_loss=0.000007 lr=1.282e-05,6.411e-05 elapsed=44m39s eta=13m03s
+[sft-train] epoch=3/3 step=400/504 progress=79.37% train_loss=0.000020 train_structure_loss=0.000011 train_value_loss=0.000008 lr=1.075e-05,5.376e-05 elapsed=45m43s eta=11m53s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 3, "false_update_rate": 0.0, "loss": 1.8465426467441477e-05, "score": 0.9999815345735326, "step": 400, "structure_loss": 1.576503927170278e-05, "value_loss": 1.9598445738028996e-06}
+[sft-train] epoch=3/3 step=410/504 progress=81.35% train_loss=0.000016 train_structure_loss=0.000011 train_value_loss=0.000004 lr=8.844e-06,4.422e-05 elapsed=47m21s eta=10m51s
+[sft-train] epoch=3/3 step=420/504 progress=83.33% train_loss=0.000019 train_structure_loss=0.000013 train_value_loss=0.000005 lr=7.106e-06,3.553e-05 elapsed=48m26s eta=9m41s
+[sft-train] epoch=3/3 step=430/504 progress=85.32% train_loss=0.000010 train_structure_loss=0.000008 train_value_loss=0.000002 lr=5.545e-06,2.772e-05 elapsed=49m30s eta=8m31s
+[sft-train] epoch=3/3 step=440/504 progress=87.30% train_loss=0.000012 train_structure_loss=0.000011 train_value_loss=0.000000 lr=4.167e-06,2.084e-05 elapsed=50m35s eta=7m21s
+[sft-train] epoch=3/3 step=450/504 progress=89.29% train_loss=0.000012 train_structure_loss=0.000009 train_value_loss=0.000002 lr=2.979e-06,1.489e-05 elapsed=51m39s eta=6m11s
+[sft-train] epoch=3/3 step=460/504 progress=91.27% train_loss=0.000018 train_structure_loss=0.000010 train_value_loss=0.000006 lr=1.984e-06,9.922e-06 elapsed=52m44s eta=5m02s
+[sft-train] epoch=3/3 step=470/504 progress=93.25% train_loss=0.000018 train_structure_loss=0.000018 train_value_loss=0.000000 lr=1.188e-06,5.940e-06 elapsed=53m47s eta=3m53s
+[sft-train] epoch=3/3 step=480/504 progress=95.24% train_loss=0.000020 train_structure_loss=0.000016 train_value_loss=0.000004 lr=5.932e-07,2.966e-06 elapsed=54m52s eta=2m44s
+[sft-train] epoch=3/3 step=490/504 progress=97.22% train_loss=0.000011 train_structure_loss=0.000010 train_value_loss=0.000000 lr=2.021e-07,1.011e-06 elapsed=55m57s eta=1m35s
+[sft-train] epoch=3/3 step=500/504 progress=99.21% train_loss=0.000018 train_structure_loss=0.000013 train_value_loss=0.000003 lr=1.651e-08,8.254e-08 elapsed=57m03s eta=0m27s
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 3, "false_update_rate": 0.0, "loss": 1.811093514285065e-05, "score": 0.9999818890648572, "step": 500, "structure_loss": 1.5452506996745907e-05, "value_loss": 1.9142731448230505e-06}
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[sft-eval] {"decision_accuracy": 1.0, "decision_macro_f1": 1.0, "epoch": 3, "false_update_rate": 0.0, "loss": 1.815623484920555e-05, "score": 0.9999818437651508, "step": 504, "structure_loss": 1.5537559110353786e-05, "value_loss": 1.888368319111669e-06}
+Removed shared tensor {'backbone.base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+{
+  "global_step": 504,
+  "best_score": 0.9999818890648572,
+  "audit": {
+    "source_records": 6000,
+    "train_records": 5406,
+    "dev_records": 594,
+    "train_scenarios": 5406,
+    "dev_scenarios": 594,
+    "scenario_overlap": 0,
+    "label_contract_errors": 0,
+    "source_sha256": "099ed7cf772678da7c58743ac3fac539894f4d5c6dc395205fda2036dda7498f",
+    "train_sha256": "2be7fb512f9a1bbb9cd476110b9c990f6a2f4ff4f4963abf3939d8074312465d",
+    "dev_sha256": "fa23caf9fdce7091e00fff7a60fb3b32a2af1f5385717939f84b1c2ff50e8a36",
+    "model_path": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/model/Qwen3-4B",
+    "model_ready": true,
+    "dependencies": {
+      "torch": {
+        "installed": true,
+        "version": "2.7.1"
+      },
+      "transformers": {
+        "installed": true,
+        "version": "4.57.1"
+      },
+      "peft": {
+        "installed": true,
+        "version": "0.18.0"
+      },
+      "accelerate": {
+        "installed": true,
+        "version": "1.12.0"
+      }
+    }
+  }
+}

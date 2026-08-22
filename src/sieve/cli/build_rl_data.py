@@ -19,6 +19,14 @@ def main() -> None:
     parser.add_argument("--train-count", type=int, default=1600)
     parser.add_argument("--dev-count", type=int, default=200)
     parser.add_argument("--test-count", type=int, default=300)
+    parser.add_argument(
+        "--raw-dir",
+        default=None,
+        help=(
+            "Optional existing raw data directory used to enrich Stage-2 source rows. "
+            "Defaults to the nearest data/raw next to the source path when present."
+        ),
+    )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -31,6 +39,7 @@ def main() -> None:
             "dev": args.dev_count,
             "test": args.test_count,
         },
+        raw_dir=(None if args.raw_dir is None else resolve_repo_path(root, args.raw_dir)),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
 

@@ -3,7 +3,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sieve.rl_data.build import build_rl_corpus, split_base_task
+from sieve.core.types import (
+    Decision,
+    Patch,
+    PatchOp,
+    RevisionOutput,
+    SlotStatus,
+    VerificationRequest,
+)
+from sieve.environments.scenario_revision_env import ScenarioRevisionEnvironment
+from sieve.rl_data.build import SCENARIO_TEMPLATES, build_rl_corpus, split_base_task
 from sieve.rl_data.io import read_scenarios
 
 
@@ -95,10 +104,16 @@ class RLDataTests(unittest.TestCase):
                 self.assertEqual(len(scenarios), count)
                 self.assertTrue(all(len(item.initial_state.slots) >= 3 for item in scenarios))
                 self.assertTrue(all(len(item.risk.dependent_fields) == 2 for item in scenarios))
+                templates = {
+                    str(item.provenance.get("scenario_template"))
+                    for item in scenarios
+                }
+                self.assertTrue(templates <= set(SCENARIO_TEMPLATES))
+                self.assertTrue(set(SCENARIO_TEMPLATES) <= templates)
+                self.assertTrue(all(len(item.events) >= 3 for item in scenarios))
                 self.assertTrue(
                     all(
-                        {event.kind for event in item.events}
-                        == {"ambiguous", "wrong_entity", "authoritative", "stale_conflict"}
+                        any(event.expected_decision == "HOLD" for event in item.events)
                         for item in scenarios
                     )
                 )
@@ -140,6 +155,84 @@ class RLDataTests(unittest.TestCase):
                 (root / "rl" / "quality_report.json").read_text(encoding="utf-8")
             )
             self.assertGreater(quality["derived_secondary_scenarios"], 0)
+            self.assertEqual(
+                set(quality["scenario_template_counts"]["train"]),
+                set(SCENARIO_TEMPLATES),
+            )
+
+    def test_structured_values_support_closed_loop_success(self) -> None:
+        rows = [
+            _audit_row(index, macro)
+            for macro in ("commerce", "service", "workflow")
+            for index in range(180)
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.jsonl"
+            source.write_text(
+                "".join(json.dumps(row) + "\n" for row in rows),
+                encoding="utf-8",
+            )
+            build_rl_corpus(
+                source,
+                root / "rl",
+                seed=42,
+                split_counts={"train": 10, "dev": 10, "test": 10},
+            )
+            scenario = read_scenarios(root / "rl" / "scenarios" / "dev.jsonl")[0]
+            environment = ScenarioRevisionEnvironment([scenario])
+            environment.reset(scenario.scenario_id, seed=42)
+
+            for _step in range(8):
+                observation = environment._current_observation()
+                event = environment._base_event()
+                if environment._verification_observation is not None:
+                    output = RevisionOutput(
+                        Decision.UPDATE,
+                        (observation.field_id,),
+                        (
+                            Patch(
+                                PatchOp.SET_VALUE,
+                                observation.field_id,
+                                observation.value,
+                            ),
+                        ),
+                        None,
+                    )
+                elif event.expected_decision == "HOLD":
+                    output = RevisionOutput(
+                        Decision.HOLD,
+                        (observation.field_id,),
+                        (
+                            Patch(
+                                PatchOp.SET_STATUS,
+                                observation.field_id,
+                                SlotStatus.PENDING.value,
+                            ),
+                        ),
+                        VerificationRequest(event.verification_tool, observation.field_id),
+                    )
+                elif event.expected_decision == "UPDATE":
+                    output = RevisionOutput(
+                        Decision.UPDATE,
+                        (observation.field_id,),
+                        (
+                            Patch(
+                                PatchOp.SET_VALUE,
+                                observation.field_id,
+                                observation.value,
+                            ),
+                        ),
+                        None,
+                    )
+                else:
+                    output = RevisionOutput(Decision.IGNORE)
+                transition = environment.step(output)
+                if transition.terminated:
+                    self.assertTrue(transition.info["success"])
+                    break
+            else:
+                self.fail("ideal Stage-2 policy did not terminate")
 
     def test_builder_groups_fields_and_uses_related_distractors(self) -> None:
         rows = []
@@ -183,9 +276,8 @@ class RLDataTests(unittest.TestCase):
             scenarios = read_scenarios(root / "rl" / "scenarios" / "train.jsonl")
             for scenario in scenarios:
                 self.assertEqual(len(scenario.risk.dependent_fields), 2)
-                self.assertNotEqual(
-                    scenario.events[0].observation.field_id,
-                    scenario.events[2].observation.field_id,
+                self.assertIn(
+                    scenario.provenance["scenario_template"], SCENARIO_TEMPLATES
                 )
                 self.assertFalse(scenario.base_task_id.startswith("WebArena:WebArena:"))
                 self.assertNotRegex(str(scenario.provenance["source_uri"]), r"^[A-Za-z]:")

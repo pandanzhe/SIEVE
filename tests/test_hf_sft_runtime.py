@@ -23,11 +23,11 @@ class HFSFTRuntimeTests(unittest.TestCase):
         audit = audit_sft_inputs(self.config)
 
         self.assertEqual(audit["source_records"], 6000)
-        self.assertEqual(audit["train_records"], 4789)
-        self.assertEqual(audit["dev_records"], 619)
+        self.assertEqual(audit["train_records"], 5406)
+        self.assertEqual(audit["dev_records"], 594)
         self.assertEqual(audit["scenario_overlap"], 0)
         self.assertEqual(audit["label_contract_errors"], 0)
-        self.assertFalse(audit["model_ready"])
+        self.assertTrue(audit["model_ready"])
 
     def test_dependency_report_does_not_import_optional_packages(self) -> None:
         report = dependency_report()
@@ -40,9 +40,7 @@ class HFSFTRuntimeTests(unittest.TestCase):
     def test_checkpoint_score_penalizes_false_updates(self) -> None:
         safe = {
             "decision_macro_f1": 0.8,
-            "affected_micro_f1": 0.7,
-            "verification_f1": 0.6,
-            "patch_operation_micro_f1": 0.5,
+            "loss": 0.6,
             "false_update_rate": 0.05,
         }
         unsafe = {**safe, "decision_macro_f1": 0.85, "false_update_rate": 0.30}

@@ -8,7 +8,7 @@ paths:
   output_dir: outputs/stage1-qwen3-4b
 
 model:
-  path: model
+  path: model/Qwen3-4B
   dtype: bfloat16
   enable_thinking: false
   max_slots: 16

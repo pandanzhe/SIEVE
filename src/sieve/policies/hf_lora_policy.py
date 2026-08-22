@@ -144,6 +144,7 @@ def create_hf_lora_policy(
                 "lm_logits": outputs.logits,
             }
             weighted_losses = _ddp_zero_loss_anchors(result)
+            zero_lm_loss = outputs.logits.sum() * 0.0
             # --- Three-objective loss: decision, structure, patch_value ---
             if "decision_labels" in batch:
                 loss = functional.cross_entropy(
@@ -162,8 +163,10 @@ def create_hf_lora_policy(
                         shift_labels.view(-1),
                         ignore_index=-100,
                     )
-                    result["structure_loss"] = loss
-                    weighted_losses.append(weights["structure"] * loss)
+                else:
+                    loss = zero_lm_loss
+                result["structure_loss"] = loss
+                weighted_losses.append(weights["structure"] * loss)
             # Patch-value loss: causal-LM on writable patch-value tokens
             if "value_labels" in batch:
                 shift_logits = outputs.logits[:, :-1, :].contiguous()
@@ -175,8 +178,10 @@ def create_hf_lora_policy(
                         shift_labels.view(-1),
                         ignore_index=-100,
                     )
-                    result["value_loss"] = loss
-                    weighted_losses.append(weights["patch_value"] * loss)
+                else:
+                    loss = zero_lm_loss
+                result["value_loss"] = loss
+                weighted_losses.append(weights["patch_value"] * loss)
             if not weighted_losses:
                 raise ValueError("training batch contains no supervised targets")
             result["loss"] = torch.stack(weighted_losses).sum()

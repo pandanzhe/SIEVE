@@ -4,10 +4,18 @@
     "service": 0.3,
     "workflow": 0.2
   },
+  "raw_enrichment_dir": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/data/raw",
+  "scenario_templates": [
+    "no_auto_repair",
+    "delayed_contamination",
+    "multi_field_dependency",
+    "verification_budget_choice",
+    "complex_stale_conflict"
+  ],
   "schema_version": "sieve.rl.scenario.v1",
   "seed": 42,
-  "source_file": "accepted.jsonl",
-  "source_sha256": "bd1c3f795aba6effba30ae24e0de3df1bfb17c34ebbb00db51b846091fe27dba",
+  "source_file": "records.jsonl",
+  "source_sha256": "099ed7cf772678da7c58743ac3fac539894f4d5c6dc395205fda2036dda7498f",
   "split_counts": {
     "dev": 200,
     "test": 300,
@@ -15,8 +23,8 @@
   },
   "split_policy": "sha256(seed:base_task_id), 75/10/15 before augmentation",
   "split_sha256": {
-    "dev": "5a1cff94110fa1ce5f0724c13ba7832e0fad9e72f39ca169596aa979b2b684f6",
-    "test": "4f211f6b42e1bd21ce93c71f80b81c4f023e7da779da0f3d5b598ae895a6d09c",
-    "train": "c15a5c99e3aad762c69c0fa47362dae6fc2a5f9bbdae86fce75fd8c16964be51"
+    "dev": "7f5f7889166b8c0d8379281c500428780493188e65d2c8ee567b9cc8eef1f742",
+    "test": "70867473daa52f92cc76d4088d8150b2fce049acbe918ec4172b581c051d29f9",
+    "train": "386b81671fe049b590a998fb0f1014ef3bf5aff096266cd332dbea402edf0e2a"
   }
 }

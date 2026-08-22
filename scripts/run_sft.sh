@@ -3,6 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 CONFIG_PATH="${1:-configs/sft_qwen3_4b.yaml}"
 NUM_PROCESSES="${SIEVE_NUM_GPUS:-1}"
+MAIN_PROCESS_PORT="${SIEVE_MAIN_PROCESS_PORT:-29500}"
 
 if [[ "${SIEVE_VALIDATE_ONLY:-0}" == "1" ]]; then
   "$PYTHON_BIN" -m sieve.cli.train_sft \
@@ -15,6 +16,7 @@ fi
 
 "$PYTHON_BIN" -m accelerate.commands.launch \
   --num_processes "$NUM_PROCESSES" \
+  --main_process_port "$MAIN_PROCESS_PORT" \
   --mixed_precision bf16 \
   -m sieve.cli.train_sft \
   --root "$ROOT_DIR" \

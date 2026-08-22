@@ -32,7 +32,7 @@ rollout:
   top_p: 0.95
 
 train:
-  iterations: 200
+  iterations: 20
   update_epochs: 1
   micro_batch_size: 2
   gradient_accumulation_steps: 4
@@ -44,7 +44,8 @@ train:
   gamma: 0.97
   multiplier_learning_rate: 0.08
   max_grad_norm: 1.0
-  eval_steps: 20
+  eval_steps: 5
+  eval_scenario_limit: 20
   save_steps: 20
   save_total_limit: 2
   resume_from:

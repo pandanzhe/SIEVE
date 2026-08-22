@@ -63,6 +63,35 @@ class ScenarioRevisionEnvironmentTests(unittest.TestCase):
             self.assertNotIn("oracle_state", step.info)
             self.assertNotIn("source_ambiguity", context_summary(step.next_context))
 
+    def test_ambiguous_ignore_is_worse_than_correct_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = self._scenario(Path(directory))
+            ignore_env = ScenarioRevisionEnvironment([scenario])
+            ignore_env.reset(scenario.scenario_id, seed=7)
+            ignore_step = ignore_env.step(RevisionOutput(decision=Decision.IGNORE))
+
+            verify_env = ScenarioRevisionEnvironment([scenario])
+            context = verify_env.reset(scenario.scenario_id, seed=7)
+            event = scenario.events[0]
+            verify_step = verify_env.step(
+                RevisionOutput(
+                    decision=Decision.HOLD,
+                    affected_fields=(context.observation.field_id,),
+                    patches=(
+                        Patch(
+                            PatchOp.SET_STATUS,
+                            context.observation.field_id,
+                            "pending_verification",
+                        ),
+                    ),
+                    verification=VerificationRequest(
+                        event.verification_tool, context.observation.field_id
+                    ),
+                )
+            )
+
+            self.assertGreater(verify_step.reward, ignore_step.reward)
+
     def test_verification_tool_is_visible_and_distinct_from_evidence_source(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             scenario = self._scenario(Path(directory))
