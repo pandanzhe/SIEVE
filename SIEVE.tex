@@ -1,0 +1,524 @@
+\documentclass{article}
+
+% ICLR 2027 submission style.
+\usepackage{iclr2027_conference,times}
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{array,tabularx,multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{enumitem}
+
+\newcommand{\method}{\textsc{Sieve}}
+\newcommand{\update}{\texttt{UPDATE}}
+\newcommand{\hold}{\texttt{HOLD}}
+\newcommand{\ignore}{\texttt{IGNORE}}
+\newcommand{\tcs}{\operatorname{TCS}}
+\newcommand{\eligible}{\operatorname{eligible}}
+\newcommand{\actions}{\operatorname{actions}}
+\newcommand{\required}{\operatorname{required}}
+\newcommand{\scope}{\operatorname{scope}}
+\newcommand{\assurance}{\operatorname{assurance}}
+\newcommand{\placeholder}{\textemdash}
+
+\title{\method: Risk-Conditioned State Commitment for Controlling Persistent Contamination in Multi-Step Language Agents}
+
+% Keep the submission anonymous. Replace this block only for the camera-ready version.
+\author{Anonymous Authors}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Multi-step language agents repeatedly consume user messages, tool outputs, and environmental feedback when planning subsequent actions. Existing systems commonly append each observation to the context or compress it into free-form memory or a structured belief. This practice implicitly treats information that has been \emph{observed} as information that is authorized to support an action. Yet an observation may be semantically plausible and still be ineligible to modify operational state because it refers to the wrong entity, is stale, lacks a required condition or authoritative provenance, or conflicts with confirmed state. Once committed, such an observation can affect tool calls over many later steps, producing \emph{persistent state contamination} rather than an isolated planning error.
+
+We introduce \method, a selective state-commitment layer between observation and action selection. For every candidate observation, a learned revision policy emits \update, \hold, or \ignore, together with affected fields, a typed local patch, and an optional verification request. A deterministic certificate function derives assurance, action scope, validity, and provenance from trusted policies; a deterministic executor is the only component allowed to modify committed state. Consequently, the model cannot grant itself broader assurance or scope. The decision is not an observation-only truth or confidence classification: whether evidence may be committed depends on the downstream actions it would support, their risk and reversibility, evidence freshness, and the remaining verification budget. This separates belief representation, state commitment, and action planning.
+
+We formulate commitment as a sequential decision problem with verification and safety costs. Supervised fine-tuning learns local semantic boundaries, while constrained multi-step reinforcement learning optimizes the long-term trade-off among task success, false updates, unsafe actions, and verification cost. To avoid a self-confirming evaluation based on synthetic rules, we propose paired observation interventions and state-swap experiments that compare clean, corrupted, \method-protected, and oracle-admission trajectories under matched environment randomness. The resulting protocol measures how much corruption enters committed state, how long it persists, and how much downstream loss is mediated by that state. Experiments are designed to compare \method with ReAct, uncertainty-aware belief representations, write-time state adjudication, and a strong risk-aware rule gate on both controlled and executable agent environments. The central hypothesis is not that three-way classification is intrinsically superior, but that risk-conditioned commitment can block cross-step error propagation while preserving benign evidence use and task utility.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Language-model agents commonly alternate among observation, reasoning, and action. ReAct established the effectiveness of interleaving reasoning with environment interaction \citep{yao2023react}; subsequent work uses episodic reflection, retrieval, recursive summarization, and hierarchical memory to control growing histories and improve long-horizon behavior \citep{shinn2023reflexion,park2023generative,packer2023memgpt}. These methods improve how history is stored or used. A logically prior control problem, however, is rarely made explicit: \emph{has a new observation earned the authority to modify the state on which the agent acts?}
+
+Consider a customer-service agent. A payment API has confirmed payment for order A, after which a chat message asks the agent to replace the delivery address. The message may come from a weak channel, refer to order B, or arrive after the order has been locked. Retaining it as candidate evidence may be reasonable; immediately overwriting order A's trusted address and dispatching a shipment is not. The issue is not only whether the sentence is true in the abstract. It is whether its entity binding, time, provenance, applicability conditions, available verification, and downstream consequences justify a state commitment.
+
+\paragraph{Related work and the unresolved gap.}
+Belief and memory methods primarily address history compression, candidate-hypothesis retention, confidence calibration, or the separation of belief and action. ABBEL replaces full history with a language belief bottleneck and improves belief updates through reinforcement learning \citep{lidayan2025abbel}. Agent-BRACE decouples a belief model from a policy model and represents approximate beliefs as confidence-annotated atomic propositions \citep{singh2026agentbrace}. BeliefMem retains multiple probabilistic hypotheses to reduce self-reinforcing errors caused by a single premature conclusion \citep{liao2026beliefmem}. STALE identifies implicit stale conflicts, and its CUPMem prototype performs write-time consolidation and invalidation propagation \citep{chao2026stale}. These are the closest alternatives to \method. Accordingly, our novelty claim is not merely ``explicit write adjudication.'' The testable distinction is \emph{action-conditional commitment}: with observation content and belief confidence held fixed, downstream risk, reversibility, and verification budget may change the correct commitment decision.
+
+Structured uncertainty can also guide tool-argument clarification. SAGE-Agent models joint clarification as a POMDP with information-value objectives \citep{suri2025structured}. \method's \hold-plus-verify behavior is related, but verification is only one commitment action: wrong-entity, stale, or inapplicable evidence should often be ignored rather than clarified. AgentDojo studies prompt injection through untrusted tool content \citep{debenedetti2024agentdojo}; provenance audits separately show that relevant evidence need not be authorized to determine a particular tool argument \citep{liao2026provenance}; and commit-time authorization requires a witness supporting a durable effect to remain fresh and bound when the effect is executed \citep{santosgrueiro2026temporary}. \method instead controls whether observations enter cross-step operational state. It complements, rather than replaces, authorization checks at execution time.
+
+For multi-step training, group-relative policy optimization avoids a separate critic but may assign the same trajectory-level advantage to decisions with different local consequences. GiGPO adds episode-level and anchor-state step-level groups for finer credit assignment \citep{feng2025gigpo}; related work develops belief-consistency signals, belief-aware grouping, and deeper group hierarchies \citep{tang2026rewarding,he2026hgpo}. More broadly, partial-observability diagnostics such as the lambda discrepancy study representation mismatch in sequential decisions \citep{allen2024lambda}. We use constrained trajectory-level GRPO by default and treat local credit assignment as a conditional extension, activated only when a measurable credit-conflict diagnostic warrants it.
+
+\paragraph{Approach.}
+We define \emph{risk-conditioned selective state commitment}: given committed task state, a candidate observation, an evidence ledger, a goal, field dependencies, action risk, and remaining resources, decide whether and within what scope that observation may become state on which the action policy can rely. The causal chain of interest is
+\begin{equation}
+\text{unreliable observation}
+\rightarrow \text{state commitment}
+\rightarrow \text{persistent contamination}
+\rightarrow \text{downstream action error}.
+\label{eq:causal-chain}
+\end{equation}
+\method inserts an independently auditable revision policy at the commitment boundary. Candidate evidence remains available without automatically becoming action-authorized state; local updates are enforced by a deterministic executor; and action policies receive only the projection of committed state eligible for the current risk envelope.
+
+\paragraph{Contributions.}
+Our intended contributions are threefold:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+    \item \textbf{A decision object.} We formulate risk-conditioned selective state commitment, separating how beliefs are represented, which evidence is authorized for action, and how an action is planned. Commitment explicitly depends on downstream risk, reversibility, and verification budget.
+    \item \textbf{A causal diagnosis.} We formalize persistent state contamination as a failure mode distinct from immediate planning error, and introduce paired counterfactual and state-swap protocols that estimate poison-to-state conversion, state-to-action conversion, and the effect mediated by committed state.
+    \item \textbf{A mechanism and learning recipe.} We instantiate the decision object with a learned revision policy, typed committed state, an evidence ledger, a verification micro-loop, deterministic certificates, and a local executor. SFT learns semantic boundaries; constrained multi-step RL learns the long-term safety--utility trade-off.
+\end{enumerate}
+We do not present the executor invariants as a theoretical novelty, nor do we claim a new general-purpose RL algorithm. The paper's central empirical burden is to establish that the proposed decision object and its state-mediated effect survive strong belief, write-adjudication, rule-based, and executable-environment comparisons.
+
+\section{Problem Formulation}
+\label{sec:problem}
+
+\subsection{From partial observations to operational state}
+
+Let $x_t\in\mathcal X$ be the latent environment state, $o_t\in\mathcal O$ an atomic observation received at time $t$, and $a_t\in\mathcal A$ an external action:
+\begin{equation}
+o_t\sim P_{\mathrm{obs}}(\cdot\mid x_t,a_{t-1}),\qquad
+x_{t+1}\sim P_{\mathrm{env}}(\cdot\mid x_t,a_t).
+\end{equation}
+The interaction is partially observable because the policy cannot inspect $x_t$. \method does not attempt to recover the full world state. Candidate propositions and their uncertainty are stored in an evidence ledger $L_t$. In contrast, $B_t$ denotes \emph{operationally committed state}: a bounded collection of typed slots that have been authorized for some actions,
+\begin{equation}
+B_t=\{b_t^1,\ldots,b_t^{K_{\max}}\}.
+\end{equation}
+Each slot contains at least a field identifier, value, trust status, entity, provenance, observation time, assurance level, allowed action scope, and expiry time. Thus $B_t$ is neither objective ground truth nor a lossless history. It records the conditions under which a field value has been committed. Uncommitted but potentially useful evidence remains in $L_t$.
+
+\subsection{Commitment actions and risk projection}
+
+The revision policy observes the bounded information state
+\begin{equation}
+s_t^{\mathrm{rev}}=(B_{t-1},o_t,g_t,r_t,L_t,\rho_t),
+\end{equation}
+where $g_t$ is the goal, $r_t$ is a risk envelope containing field dependencies, action severity, and reversibility, and $\rho_t$ is the remaining step, token, tool, and verification budget. When this state approximately summarizes decision-relevant history, the commitment layer admits the information-state MDP approximation
+\begin{equation}
+P(s_{t+1}^{\mathrm{rev}}\mid s_{0:t}^{\mathrm{rev}},u_{0:t})
+\approx P(s_{t+1}^{\mathrm{rev}}\mid s_t^{\mathrm{rev}},u_t).
+\end{equation}
+Its structured action is
+\begin{equation}
+u_t=(c_t,A_t,\Delta B_t,q_t),\qquad
+c_t\in\{\update,\hold,\ignore\},
+\end{equation}
+where $A_t$ is the affected-field set, $\Delta B_t$ a bounded typed patch, and $q_t$ an optional verification request. After generation, a deterministic certificate function produces
+\begin{equation}
+\zeta_t=G_{\mathrm{cert}}(o_t,r_t,u_t)
+=(\mathrm{assurance}_t,\mathrm{scope}_t,\mathrm{validity}_t,\mathrm{provenance}_t).
+\end{equation}
+$G_{\mathrm{cert}}$ can only preserve or narrow privileges using trusted source mappings, field policy, and the current risk envelope; it never accepts a free-form model claim that elevates assurance or scope. \update commits an authorized local change, \hold retains relevant but insufficient evidence and may request verification, and \ignore consumes neither committed-state capacity nor verification budget for evidence that is irrelevant, stale, entity-mismatched, or inapplicable. A deterministic executor $U$ performs the update:
+\begin{equation}
+B_t=U(B_{t-1},u_t,\zeta_t,o_t).
+\end{equation}
+
+For a committed entry $b$, eligibility under the current risk envelope is
+\begin{align}
+\eligible(b,r_t,t)=\mathbf{1}[&\assurance(b)\geq\required(r_t)\ \land \nonumber\\
+&\scope(b)\supseteq\actions(r_t)\ \land\ t\leq\mathrm{valid\_until}(b)].
+\end{align}
+The action policy receives only
+\begin{equation}
+B_t^{\mathrm{act}}=\Pi_{r_t}(B_t)
+=\{b\in B_t:\eligible(b,r_t,t)=1\},\qquad
+s_t^{\mathrm{act}}=(B_t^{\mathrm{act}},g_t,r_t).
+\label{eq:risk-projection}
+\end{equation}
+The executor repeats the certificate's scope and freshness checks immediately before a tool call. If the action policy can read raw uncommitted history or entries ineligible under $r_t$, the causal effect of the commitment boundary cannot be isolated.
+
+\subsection{Risk-conditioned selective commitment}
+
+An observation-only admission model has the form $u_t\sim\pi(u_t\mid B_{t-1},o_t)$. We instead ask whether evidence may support particular actions. Let $\mathcal A(f)$ denote candidate downstream actions depending on field $f$, with harm $h(a)$, reversibility $\mathrm{rev}(a)$, and verification cost $c(q)$. The revision policy approximates
+\begin{equation}
+u_t^*=\arg\max_{u\in\{\update,\hold,\ignore\}}
+\mathbb E\!\left[V_{\mathrm{task}}(u)-\lambda(r_t)C_{\mathrm{unsafe}}(u)-c(q_t)\mid s_t^{\mathrm{rev}}\right].
+\label{eq:commit-objective}
+\end{equation}
+Here $\lambda(r_t)$ varies with downstream harm, irreversibility, and field dependence. Risk does not alter the agent's subjective probability that a proposition is true: candidate beliefs remain in $L_t$. Risk changes only the operational assurance and action scope that evidence may receive. For example, weakly sourced address evidence may be eligible for a reversible draft preview yet remain invisible to an irreversible shipment action until verified.
+
+We test action conditioning using risk-minimal pairs. Each pair holds task text, observation, provenance, entity, and time fixed while changing only the risk, reversibility, or verification budget of an action consuming the field. Define the risk-conditioned response rate
+\begin{equation}
+\mathrm{RCR}=P\!\left(u^{\mathrm{high\ risk}}\text{ is more conservative than }u^{\mathrm{low\ risk}}\right).
+\end{equation}
+RCR must be reported jointly with correct low-risk updates, benign retention, over-holding, and task utility; uniformly choosing \hold is not successful selective commitment.
+
+\subsection{Persistent contamination and mediation}
+
+Given oracle-relevant fields $D_t$, define contamination at time $t$ as
+\begin{equation}
+\kappa_t=\frac{1}{|D_t|}\sum_{f\in D_t}\mathbf{1}
+\left[B_t(f)\text{ is trusted and }B_t(f)\neq x_t(f)\right].
+\end{equation}
+Its cross-step area and recovery latency are
+\begin{equation}
+\mathrm{CA}(\tau)=\sum_{t=1}^{T-1}\frac{\kappa_t+\kappa_{t+1}}{2},
+\end{equation}
+and the number of steps from the first $\kappa_t>0$ until contamination returns to zero, respectively. We further decompose propagation into
+\begin{align}
+\mathrm{P2S}&=P(\kappa_t>0\mid o_t\text{ is corrupted}),\\
+\mathrm{S2A}&=P(a_{t':T}\text{ depends on a corrupted field}\mid\kappa_t>0).
+\end{align}
+
+For each underlying task $i$, we match initial state, user goal, action policy, unaffected tool outputs, and random seed across clean $\tau_i^{\mathrm{cln}}$, corrupted $\tau_i^{\mathrm{cor}}$, \method-protected $\tau_i^{\mathrm{sv}}$, and oracle-admission $\tau_i^{\mathrm{orc}}$ trajectories. For terminal utility $Y$,
+\begin{align}
+\Delta_i^{\mathrm{cor}}&=Y(\tau_i^{\mathrm{cln}})-Y(\tau_i^{\mathrm{cor}}),\\
+\mathrm{Rec}_i&=\frac{Y(\tau_i^{\mathrm{sv}})-Y(\tau_i^{\mathrm{cor}})}
+{Y(\tau_i^{\mathrm{orc}})-Y(\tau_i^{\mathrm{cor}})+\epsilon}.
+\end{align}
+At a fixed point $t^*$ after contamination first appears, a \emph{state swap} keeps the corrupted trajectory's goal, later observations, action agent, and randomness but replaces $B_{t^*}^{\mathrm{cor}}$ with clean or oracle committed state. The state-repair effect and state-mediated ratio are
+\begin{align}
+\mathrm{SRE}_i&=Y\!\left(\tau_i^{\mathrm{cor}};do(B_{t^*}=B_{t^*}^{\mathrm{cln}})\right)-Y(\tau_i^{\mathrm{cor}}),\\
+\mathrm{SMR}_i&=\frac{\mathrm{SRE}_i}{Y(\tau_i^{\mathrm{cln}})-Y(\tau_i^{\mathrm{cor}})+\epsilon}.
+\end{align}
+SMR is reported only where later events can be fixed or replayed. It therefore supports a benchmark-local causal interpretation, not a universal mediation claim.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{Architecture and typed state}
+
+\method has five components. An \emph{Observation Adapter} decomposes compound tool output into atomic observations with provenance, entity, time, and applicability metadata. A learned \emph{Revision Policy} maps an observation and risk envelope to a commitment action. An \emph{Evidence Ledger} stores bounded candidates and verification results. A \emph{Deterministic Executor} applies legal local patches. Finally, a frozen or separately trained \emph{Action Agent} reads only risk-eligible committed state. The risk envelope is an interface derived from the current plan or task schema: it specifies which actions read each field, whether they are reversible, the cost of an error, and whether verification is possible.
+
+The ledger is bounded by $|L_t|\leq L_{\max}$ and evicts resolved, irrelevant, or expired evidence using deterministic rules. Its semantics differ from those of committed state:
+\begin{equation}
+L_t:\ \text{candidate evidence},\qquad
+B_t:\ \text{action-authorized state}.
+\end{equation}
+An uncertainty-aware belief baseline may store multiple candidates or confidence scores in the same schema. Without an admission boundary, however, the action policy must still infer whether that confidence is sufficient for the current action.
+
+\subsection{Executor invariants and verification}
+
+The executor accepts only schema-valid patches and certificates. It enforces
+\begin{align}
+c_t=\ignore&\Rightarrow B_t=B_{t-1},\\
+c_t=\hold&\Rightarrow\text{no trusted value is overwritten},\\
+f\notin A_t&\Rightarrow B_t(f)=B_{t-1}(f).
+\end{align}
+It also rejects invalid serialization, duplicate keys, non-finite values, out-of-schema fields, incorrect patch types, collateral edits, and illegal scope escalation. In particular,
+\begin{equation}
+\scope(b)\not\supseteq\actions(r_t)\ \lor\ 
+\assurance(b)<\required(r_t)
+\Rightarrow b\notin\Pi_{r_t}(B_t).
+\end{equation}
+These are program-level invariants, not claims that the model's semantic judgment is correct.
+
+A \hold action may initiate a field-level verification micro-loop,
+\begin{equation}
+s_{t,0}^{\mathrm{rev}}\rightarrow u_{t,0}^{\mathrm{HOLD+VERIFY}}
+\rightarrow e_{t,1}\rightarrow L_{t,1}\rightarrow s_{t,1}^{\mathrm{rev}}\rightarrow u_{t,1}.
+\end{equation}
+Verification evidence is first written to $L_t$ and is re-adjudicated; it never bypasses commitment. The loop terminates when evidence is sufficient, no suitable tool exists, the budget is exhausted, or the expected value of another query is too low.
+
+\subsection{Supervised learning}
+
+Stage 1 trains one autoregressive revision policy to emit strict structured output for a single RevisionContext. Partitioning target tokens into decision, structure, and patch value yields
+\begin{equation}
+\mathcal L_{\mathrm{SFT}}=
+\lambda_d\mathcal L_{\mathrm{decision}}+
+\lambda_s\mathcal L_{\mathrm{structure}}+
+\lambda_v\mathcal L_{\mathrm{value}}.
+\end{equation}
+The data supervise entity, time, provenance, and applicability matching as well as the output protocol. The model does not predict its own certificate; $G_{\mathrm{cert}}$ deterministically derives it from auditable policy. SFT alone does not optimize the consequences of an early commitment several steps later.
+
+\subsection{Constrained multi-step reinforcement learning}
+
+To distinguish the source of dense reward from an RL advantage estimate, we name the state score the \emph{Trusted-state Consistency Score} (TCS), rather than a ``potential'' or ``advantage.'' For task-dependent fields $D_t$,
+\begin{equation}
+\tcs(B_t,x_t;r_t)=\frac{1}{|D_t|}\sum_{f\in D_t}\mathbf{1}
+\left[\Pi_{r_t}(B_t)(f)=x_t(f)\land\mathrm{status}_t(f)=\mathrm{trusted}\right].
+\end{equation}
+We form a \emph{consistency-difference shaping reward}
+\begin{equation}
+r_t^{\mathrm{state}}=\gamma\,\tcs(B_t,x_t;r_t)-\tcs(B_{t-1},x_{t-1};r_{t-1}),
+\label{eq:tcs-reward}
+\end{equation}
+and combine it with environment reward,
+\begin{equation}
+r_t=r_t^{\mathrm{task}}+\beta_{\mathrm{state}}r_t^{\mathrm{state}}.
+\end{equation}
+TCS is the state-quality score; $r_t^{\mathrm{state}}$ is the dense reward derived from score differences. Neither is the advantage function used by policy optimization. Equation~\ref{eq:tcs-reward} has the mathematical form of potential-based reward shaping, with TCS serving as the shaping score, but the descriptive name prevents it from being confused with the group-relative advantage below. The return and shaping term use the same discount convention; when undiscounted episodic returns are used, we set $\gamma=1$ in Equation~\ref{eq:tcs-reward}.
+
+The cost vector includes false update, unsafe action, scope escalation, verification, stalling, invalid format, invalid patch, collateral edit, and budget violation. We optimize
+\begin{equation}
+\max_\theta\ \mathbb E_{\tau\sim\pi_\theta}[R(\tau)]
+\quad\text{s.t.}\quad \mathbb E[C_j(\tau)]\leq d_j\quad\forall j.
+\end{equation}
+With Lagrangian relaxation,
+\begin{equation}
+\widetilde R_i=R_i-\sum_j\lambda_j C_{ij},\qquad
+\lambda_j\leftarrow\left[\lambda_j+\eta_\lambda(\overline C_j-d_j)\right]_+.
+\end{equation}
+Our default trainer is trajectory-level constrained GRPO (CGRPO): this label denotes GRPO with Lagrangian cost constraints, not a new method named ``SIEVE-CGRPO.'' For $G$ trajectories sampled from the same initial scenario, the group-relative advantage estimate is
+\begin{equation}
+A_i=\frac{\widetilde R_i-\operatorname{mean}(\widetilde R)}
+{\operatorname{std}(\widetilde R)+\epsilon}.
+\end{equation}
+$A_i$, unlike TCS, answers how good trajectory $i$ is relative to other samples in its group; tokens in a trajectory share this estimate. The complete signal chain is
+\begin{equation}
+\underbrace{\tcs(B_t,x_t;r_t)}_{\text{state-quality score}}
+\rightarrow\underbrace{r_t^{\mathrm{state}}}_{\text{dense reward}}
+\rightarrow\underbrace{\widetilde R_i}_{\text{constrained return}}
+\rightarrow\underbrace{A_i}_{\text{GRPO advantage estimate}}.
+\end{equation}
+
+\subsection{Conditional local credit assignment}
+
+Trajectory-level advantages can diffuse the delayed cost of an early false commitment, but we treat this as a measured condition rather than an assumption. A \emph{credit conflict} occurs when actions from equivalent commitment states have different counterfactual consequences but receive a reversed trajectory-level ranking because of unrelated later noise. We measure equivalent-state coverage, within-group action diversity, and agreement between local counterfactual and trajectory-return rankings. If repeated-state coverage is sufficient, GiGPO anchor-state grouping is a mature baseline \citep{feng2025gigpo}. If coverage is sparse but high-impact commitment nodes can be identified, we evaluate risk-targeted branching that compares \update, \hold, and \ignore only where a candidate action may change trusted state, support a high-risk action, or spend scarce verification budget. Targeted branching must be compared with uniform and entropy-based branching under equal rollout, tool, and token budgets. It is excluded from the main method when the diagnostic is negative.
+
+\section{Experimental Design}
+\label{sec:experiments}
+
+\subsection{Research questions, environments, and evaluation tracks}
+
+The experiments test: (RQ1) whether unreliable observations enter state and propagate to later actions; (RQ2) whether a state swap recovers corruption-induced loss with the action agent frozen; (RQ3) whether commitment changes under risk-minimal pairs; (RQ4) whether strong belief, write-adjudication, or rule-based alternatives match \method; (RQ5) whether gains persist after accounting for benign retention and efficiency; (RQ6) whether multi-step RL is necessary beyond SFT; and (RQ7) whether local credit assignment helps only on diagnosed conflicts.
+
+\paragraph{Controlled environment.}
+The current internal corpus contains 2,100 episodes split by underlying task into 1,600/200/300 train/dev/test episodes, corresponding to 1,030/135/201 distinct base tasks with zero cross-split overlap. Scenarios are converted into a common schema from traceable records inspired by AgentBench, ToolBench, WebArena, car-bench, $\tau^2$-bench, and $\tau^3$-bench. Five templates cover stale conflict, delayed contamination, multi-field dependence, prohibited automatic repair, and verification-budget choice. Statistics are bootstrapped by base task, not augmented episode. The controlled environment provides oracle state, replayable counterfactuals, and exact decomposition of the contamination chain; it cannot by itself establish external validity.
+
+\paragraph{Executable environments.}
+The primary external environment will be $\tau$-bench/$\tau^2$-bench or AppWorld. $\tau$-bench supplies multi-turn user interaction, domain policies, API tools, and terminal database evaluation \citep{yao2025taubench}. AppWorld offers nine simulated applications, 457 APIs, state-based tests, and collateral-damage checks \citep{trivedi2024appworld}. ALFWorld adds a partially observed long-horizon setting shared with recent belief methods. For each adapted environment, we preserve its action policy and scorer; overlay stale, wrong-entity, weak-source, and conflicting observations; run matched clean/corrupted/protected/oracle trajectories; prevent raw observations from bypassing the commitment interface; and perform state swaps on replayable tasks. AgentDojo is an additional security stress test rather than the sole external result because prompt injection is adjacent to, but narrower than, general evidence admission.
+
+Each environment has two tracks. The \emph{native utility track} uses unmodified benchmark tasks to measure the overhead or utility loss caused by the commitment layer. The \emph{matched intervention track} holds base tasks fixed while changing observation entity, time, source, conflict, or applicability and annotating action risk and reversibility. Our advantage claim is restricted to partially observable tasks with persistent fields, heterogeneous evidence quality, later actions that consume those fields, and measurable error costs. On single-step, fully authoritative, or entirely reversible tasks, \method should at most preserve clean utility.
+
+\subsection{Baselines and fair comparison}
+
+We use four core system-level baselines: ReAct with full history \citep{yao2023react}; an Agent-BRACE-style separated uncertainty-aware belief model \citep{singh2026agentbrace}; a STALE/CUPMem-style write-time conflict and invalidation mechanism \citep{chao2026stale}; and a strong deterministic gate using entity, source, time, conflict, scope, and risk thresholds. The complete \method system adds risk-conditioned commitment, an evidence ledger, verification, certificates, risk projection, and the deterministic executor. A BeliefMem-style baseline is added on ALFWorld and multi-hypothesis subsets \citep{liao2026beliefmem}. Adaptations without a directly reusable official implementation are explicitly marked ``-style'' and accompanied by public mapping rules.
+
+All systems share the base model, action agent, inputs, environment version, maximum context, tool budget, and corruption seeds. Structured-belief baselines receive the same slot schema and metadata as \method. Thresholds are selected only on development tasks. Extra model parameters, inference tokens, tool calls, and verification calls are reported. SIEVE-Prompt, SIEVE-SFT, SIEVE-GRPO, and SIEVE-CGRPO are training ablations of the same system, not cross-paper baselines; the main-result row remains \method, with its trainer disclosed in the caption.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Planned system-level comparison by environment.}
+\label{tab:benchmark-plan}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+Environment & Core comparisons & Primary evidence \\
+\midrule
+Internal-Causal & ReAct, Agent-BRACE-style, CUPMem-style, rule gate, \method & Exact P2S, S2A, CA, SRE, and SMR decomposition \\
+$\tau^2$-bench & Same five systems & Multi-turn policy compliance, state changes, and heterogeneous risk \\
+ALFWorld & ReAct, Agent-BRACE-style, CUPMem-style, \method; BeliefMem-style supplement & Direct test against uncertainty-aware belief and memory methods \\
+AppWorld & ReAct, CUPMem-style, rule gate, \method & Database state, unexpected modifications, and collateral damage \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Metrics and statistical protocol}
+
+Task metrics include native task success, pass$^k$, benign-evidence retention, missed-update and over-hold rates, environment steps, tool and verification calls, and generated tokens. Propagation metrics are $\Delta^{\mathrm{cor}}$, recovered fraction, SRE, SMR, P2S, S2A, contamination area, recovery latency, and the oracle-admission upper bound. Safety--utility metrics include false updates, unsafe actions, collateral edits, scope escalation, verification cost, RCR, and success--false-update and success--tool-cost Pareto curves.
+
+Main experiments use at least three random seeds. We compute 95\% confidence intervals by stratified bootstrap over base tasks, and use task-level paired bootstrap or permutation tests for paired interventions. We report effect sizes in addition to significance. Development data select rule thresholds, constraint limits, and checkpoints; internal test and external held-out sets are evaluated only after the protocol is frozen. Dataset version, manifest hash, corruption seed, checkpoint identifier, failure traces, and all resource budgets are recorded.
+
+\subsection{Preliminary controlled results}
+
+Table~\ref{tab:internal-snapshot} is a single-seed development snapshot, not a final system-level comparison. SFT-only attains 2.00\% closed-loop success, whereas the current Stage-2 GRPO and GiGPO checkpoints both attain 97.67\%. Append-all produces a 72.22\% false-update rate and only 24.00\% success, demonstrating severe contamination without an admission boundary. However, a rule gate using only prompt-visible metadata reaches 99.67\% success. The present internal benchmark is therefore too heuristically solvable to establish the necessity of a learned gate; external executable environments, risk-minimal pairs, and more natural errors are required.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Current held-out internal snapshot (one seed; preliminary). ``Verify/action'' is the ratio of verification calls to action opportunities.}
+\label{tab:internal-snapshot}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+Model/trainer & Episodes & Success $\uparrow$ & Return $\uparrow$ & Parse $\uparrow$ & False update $\downarrow$ & Stall $\downarrow$ & Invalid $\downarrow$ & Verify/action \\
+\midrule
+SFT-only & 300 & .0200 & -.1701 & .9375 & .0147 & .0331 & .0625 & .0074 \\
+Append-all & 300 & .2400 & .0157 & 1.0000 & .7222 & .0000 & .0000 & .0000 \\
+Visible rule gate & 300 & .9967 & 2.4897 & 1.0000 & .0000 & .0000 & .0000 & .2174 \\
+Rule upper bound & 300 & .9967 & 2.4238 & 1.0000 & .0000 & .0435 & .0000 & .2174 \\
+SIEVE-GRPO & 300 & .9767 & 2.4466 & .9949 & .0000 & .0000 & .0051 & .2174 \\
+SIEVE-GiGPO & 300 & .9767 & 2.4466 & .9949 & .0000 & .0000 & .0051 & .2174 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+In a separate AgentDojo admission smoke test, 20 user-task/injection-task pairs yield 40 observations. All three policies block every injection from entering committed state, while retaining every benign update. The SFT, GRPO, and GiGPO parse rates are .950, .925, and .900, respectively. This result only establishes transfer of the commitment boundary to AgentDojo-style untrusted content. It does not report learned-agent utility or security because the complete action-agent-plus-\method loop has not yet been evaluated.
+
+\subsection{Main result tables to be completed}
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Native utility track. All entries are reserved for preregistered evaluation.}
+\label{tab:native-main}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+System & $\tau^2$ Pass$^1\uparrow$ & AppWorld goal $\uparrow$ & ALFWorld success $\uparrow$ & Tool calls $\downarrow$ & Tokens $\downarrow$ \\
+\midrule
+ReAct & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Agent-BRACE-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+STALE/CUPMem-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Risk-aware rule gate & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\textbf{\method\ (ours)} & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Matched intervention track. The \method row denotes the complete system; the chosen trainer will be specified in the final caption.}
+\label{tab:intervention-main}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+System & Internal success & $\tau^2$ corrupted & AppWorld corrupted & ALFWorld corrupted & Unsafe $\downarrow$ & Recovered $\uparrow$ \\
+\midrule
+ReAct & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Agent-BRACE-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+STALE/CUPMem-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Risk-aware rule gate & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\textbf{\method\ (ours)} & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Paired causal intervention and state-mediation results.}
+\label{tab:causal-main}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+System & Rec. $\uparrow$ & SRE $\uparrow$ & SMR $\uparrow$ & P2S $\downarrow$ & S2A $\downarrow$ & CA $\downarrow$ \\
+\midrule
+ReAct & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Agent-BRACE-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+STALE/CUPMem-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Rule gate & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\textbf{\method} & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Oracle admission & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Risk-minimal pairs. High RCR is meaningful only together with low-risk updates and low over-holding.}
+\label{tab:risk-pairs}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+System & Low-risk update $\uparrow$ & High-risk verify $\uparrow$ & RCR $\uparrow$ & Scope escalation $\downarrow$ & Over-hold $\downarrow$ \\
+\midrule
+ReAct & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Agent-BRACE-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+STALE/CUPMem-style & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Rule gate & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\textbf{\method} & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Ablations and Analysis}
+\label{sec:analysis}
+
+\subsection{Scope of effectiveness}
+
+The current SIEVE-GRPO internal test reaches 100.00\%, 98.89\%, and 90.00\% success on 150 commerce, 90 service, and 60 workflow episodes. False updates and stalls are zero in all subsets; the remaining errors are concentrated in workflow serialization. The final analysis will stratify results by wrong entity, stale or out-of-order evidence, weak sources paired with reversible versus irreversible actions, conflicting sources, scarce verification budgets, and short versus long horizons. The hypothesis is deliberately bounded: gains should concentrate where heterogeneous evidence enters persistent fields that later support costly actions. A gain limited to synthetic event labels would not support the claim.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Mechanism ablations to be completed.}
+\label{tab:mechanism-ablation}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Variant & Success $\uparrow$ & False update $\downarrow$ & Benign retention $\uparrow$ & CA $\downarrow$ & Verify/task $\downarrow$ \\
+\midrule
+Full \method & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+No evidence ledger & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+No risk envelope & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+No assurance/scope projection & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+No verification loop & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Free-text instead of typed state & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Model edits state without executor & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+No Lagrangian constraints & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+Append every observation & \placeholder & \placeholder & \placeholder & \placeholder & \placeholder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Training and credit assignment}
+
+The current single-seed run shows a large gap between SFT-only and Stage-2 RL in the closed loop, but no difference between trajectory GRPO and GiGPO at test time. Both RL variants reach 97.67\% success with zero false updates and stalls; GiGPO's step-level reward variance is present early and decays as the internal task saturates. We therefore do not treat GiGPO as a necessary algorithmic contribution. It enters the main paper only if equivalent-state coverage and credit-conflict diagnostics predict a reproducible, budget-matched gain. Otherwise it remains an appendix ablation.
+
+\subsection{Error analysis}
+
+Trace inspection of 60 workflow scenarios finds six failures for each current RL checkpoint. Every failure combines a parse error with a final state mismatch; none contains a false update. The policy generally chooses \hold-plus-verify for unverified values and \ignore for wrong-entity or stale conflicts. Failure occurs when a long tool result---containing nested JSON, Python-style dictionaries, quotation marks, backslashes, or URLs---is copied into a JSON patch value and becomes invalid. The executor correctly rejects the malformed patch, leaving the oracle field unset. This differs from append-all failures, which predominantly commit corrupted observations.
+
+The next schema revision will permit a value-reference operation such as \texttt{COPY\_OBSERVATION\_VALUE}: the model decides whether a field should be committed but need not reproduce an arbitrarily long value. Final error analysis will double-code at least 100 failed trajectories into entity binding, temporal reasoning, source authorization, applicability, verification choice, failure to commit after verification, over-holding, over-ignoring, patch/executor, and action-planning errors. It will separately report correct commitment followed by planning failure and commitment-caused planning failure.
+
+\subsection{Falsifying outcomes}
+
+The following outcomes would narrow or reject our intended claim: a strong rule gate matches \method on unseen compositions and external tasks; fewer false updates are offset by equally many missed updates; an uncertainty-aware belief baseline reaches the same safety--utility frontier; SFT and RL are indistinguishable in delayed or irreversible settings; natural agents rarely convert corrupted observations into persistent state; or local credit methods help only because they use additional rollouts. If rules suffice, the work should be reframed as a causal benchmark and mechanism analysis. If SFT suffices, RL becomes an implementation detail. If state swaps have negligible effect, persistent committed state is not the dominant mediator in that setting.
+
+\section{Limitations}
+\label{sec:limitations}
+
+\method assumes a task schema and metadata for entities, provenance, time, and applicability; these may be missing or forged in open-world deployments. A deterministic certificate only enforces configured source--assurance and action--scope policies. Incorrect policy or untrustworthy provenance makes non-escalation insufficient for semantic safety. Likewise, the executor guarantees patch and scope validity, not the semantic correctness of the revision policy. The explicit boundary adds latency, tokens, and verification calls, and excessive conservatism can degrade usability.
+
+The controlled data are constructed from rules and open-source traces. Their paired-causal precision does not imply that they reproduce the natural distribution of errors. External executable evaluation and auditing of naturally occurring failures are therefore essential. Current AgentDojo evidence is only an admission smoke test plus a ground-truth-checker probe; it is not a complete learned-agent utility or security result. Oracle state is used solely for training rewards and evaluation, and any oracle leakage into the policy input invalidates the result.
+
+Finally, \method is not a complete agent-security system. It does not eliminate malicious tools, excessive API privileges, deception, privacy leakage, or all action-planning failures. State modifications in our released evaluation are confined to simulators, and released traces must remove personal information and credentials while retaining license and provenance documentation.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We study a narrow but consequential question in multi-step language agents: after an observation has been seen, when is it eligible---under the risk of the actions it would support---to become state on which the agent may act? \method separates risk-conditioned state commitment from belief representation and action planning through learned \update/\hold/\ignore decisions, typed committed state, an evidence ledger, a verification micro-loop, deterministic certificates, and a local executor. The decisive evidence is not three-way classification accuracy. It is whether the same evidence is committed differently under meaningfully different downstream risk, whether corrupted observations harm later behavior through committed state, and whether this propagation can be blocked without discarding benign evidence or task utility. State swaps, risk-minimal pairs, executable environments, strong belief and write-adjudication baselines, and equal-budget analysis jointly determine whether this proposal supports a competitive main-conference claim.
+
+\subsection*{AI Use Statement}
+
+Generative AI tools were used to assist with translation from an author-written Chinese research draft into English, editorial restructuring, and LaTeX conversion. The authors are responsible for verifying all technical claims, mathematical definitions, citations, code, and experimental results, and will review every AI-assisted passage before submission. No experimental measurement is generated by the language model.
+
+\subsection*{Ethics Statement}
+
+The study evaluates failures that may cause agents to perform unintended actions. All state-changing experiments are conducted in controlled or simulated environments. Released artifacts will remove personal data, credentials, and sensitive tool outputs. The proposed mechanism reduces one pathway from unreliable evidence to action, but should not be represented as a guarantee of safety or authorization.
+
+\subsection*{Reproducibility Statement}
+
+Section~\ref{sec:experiments} specifies task-level splits, baselines, budgets, metrics, and the paired statistical protocol. The final supplementary material will include schema definitions, prompts, certificate and executor policies, environment adapters, intervention generators, manifest hashes, random seeds, checkpoints, and representative failure trajectories.
+
+\bibliography{iclr2027_conference}
+\bibliographystyle{iclr2027_conference}
+
+\appendix
+
+\section{Decision Gates Before Final Submission}
+\label{app:decision-gates}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\caption{Minimum evidence required for each intended claim.}
+\label{tab:decision-gates}
+\begin{tabularx}{\textwidth}{@{}p{.24\textwidth}p{.37\textwidth}X@{}}
+\toprule
+Claim & Required evidence & Treatment if unmet \\
+\midrule
+Persistent contamination is externally relevant & Non-zero P2S, S2A, and CA in at least one executable environment & Restrict it to an internal diagnostic \\
+Committed state is a causal mediator & Paired intervention and state swap recover utility with the action agent frozen & Reframe as an end-to-end architecture \\
+Commitment differs from belief update & Risk-minimal-pair gain over belief and write-adjudication baselines & Claim complementarity only \\
+Scope prevents privilege escalation & Near-zero scope escalation without a material low-risk utility loss & Present certificates as a design recommendation \\
+Learned commitment beats belief representation & Strong uncertainty-aware belief loses under matched budgets & Claim complementarity only \\
+Gains are not conservative refusal & Lower false updates with retained benign evidence and success & Report a safety--utility trade-off \\
+RL is a contribution & RL reliably beats SFT on delayed, budgeted, or irreversible subsets & Treat RL as implementation detail \\
+Local credit assignment is needed & Diagnosed conflicts and stable equal-budget gains & Remove the extension from the main method \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Suggested Main-Paper Layout}
+
+The intended eight-to-nine-page body allocates approximately 1.3 pages to the introduction and related work, 1.0 page to the problem formulation, 2.4 pages to the method and learning objective, 2.0 pages to experimental design and main results, 1.4 pages to ablations and analysis, 0.3 pages to limitations, and 0.2 pages to the conclusion. Development-only tables and extended negative-result diagnostics can move to the appendix once final measurements are available.
+
+\end{document}

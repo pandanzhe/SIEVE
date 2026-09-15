@@ -1,0 +1,32 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/scripts/evaluate_agentdojo_full_sieve.py", line 1030, in <module>
+    main()
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/scripts/evaluate_agentdojo_full_sieve.py", line 833, in main
+    from agentdojo.task_suite.load_suites import get_suite
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/task_suite/__init__.py", line 2, in <module>
+    from agentdojo.task_suite.load_suites import get_suite, get_suites, register_suite
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/task_suite/load_suites.py", line 3, in <module>
+    import agentdojo.default_suites.v1_1  # Register new tasks
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/default_suites/v1_1/__init__.py", line 1, in <module>
+    import agentdojo.default_suites.v1_1.travel.user_tasks  # noqa: F401
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/default_suites/v1_1/travel/user_tasks.py", line 6, in <module>
+    from agentdojo.default_suites.v1.travel.task_suite import TravelDeepDiff, TravelEnvironment, task_suite
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/default_suites/v1/travel/__init__.py", line 1, in <module>
+    from agentdojo.default_suites.v1.travel.injection_tasks import TravelInjectionTask  # noqa: F401 - Register tasks
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/default_suites/v1/travel/injection_tasks.py", line 5, in <module>
+    from agentdojo.default_suites.v1.travel.task_suite import TravelEnvironment, task_suite
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/default_suites/v1/travel/task_suite.py", line 3, in <module>
+    from deepdiff.diff import DeepDiff
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/deepdiff/__init__.py", line 10, in <module>
+    from .diff import DeepDiff as DeepDiff
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/deepdiff/diff.py", line 45, in <module>
+    from deepdiff.lfucache import LFUCache, DummyLFU
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/deepdiff/lfucache.py", line 2, in <module>
+    from cachebox import LRUCache
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/cachebox/__init__.py", line 1, in <module>
+    from ._core import (
+ModuleNotFoundError: No module named 'cachebox._core'

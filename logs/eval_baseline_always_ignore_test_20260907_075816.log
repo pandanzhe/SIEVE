@@ -1,0 +1,8 @@
+[baseline-eval] progress 1/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 50/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 100/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 150/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 200/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 250/300 elapsed=0m00s eta=0m00s
+[baseline-eval] progress 300/300 elapsed=0m00s eta=0m00s
+[baseline-eval] done baseline=always_ignore success=0.0000 parse=1.0000 return=-1.1772 output=outputs/baselines/always_ignore/evaluation_test.json

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence
@@ -20,6 +21,15 @@ from ..training.hf_grpo import (
 from ..training.hf_grpo_config import HFGRPOConfig
 
 _CATEGORIES = ("all", "commerce", "service", "workflow")
+
+
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{seconds:02d}s"
+    return f"{minutes}m{seconds:02d}s"
 
 
 def totals_to_metrics(totals: Any) -> dict[str, float]:
@@ -127,6 +137,13 @@ def evaluate_stage2_checkpoint(
         )
     if accelerator.device.type != "cuda":
         raise RuntimeError("Stage-2 checkpoint evaluation requires CUDA")
+    if accelerator.is_main_process:
+        print(
+            "[stage2-eval] start "
+            f"split={split} scenarios={len(scenarios)} "
+            f"checkpoint={checkpoint} output={output_path}",
+            flush=True,
+        )
     policy, tokenizer = load_stage1_policy(
         evaluation_config, is_trainable=False
     )
@@ -136,9 +153,9 @@ def evaluate_stage2_checkpoint(
     local_totals = np.zeros((len(_CATEGORIES), 10), dtype=np.float64)
     category_index = {name: index for index, name in enumerate(_CATEGORIES)}
     indexed = list(enumerate(scenarios))
-    for global_index, scenario in indexed[
-        accelerator.process_index :: accelerator.num_processes
-    ]:
+    local_indexed = indexed[accelerator.process_index :: accelerator.num_processes]
+    started_at = time.time()
+    for local_order, (global_index, scenario) in enumerate(local_indexed, start=1):
         values = _evaluate_local_scenario(
             policy,
             tokenizer,
@@ -149,6 +166,22 @@ def evaluate_stage2_checkpoint(
         )
         local_totals[category_index["all"]] += values
         local_totals[category_index[scenario.macro_domain]] += values
+        if accelerator.is_main_process and (
+            local_order == 1
+            or local_order == len(local_indexed)
+            or local_order % 10 == 0
+        ):
+            elapsed = time.time() - started_at
+            progress = local_order / max(len(local_indexed), 1)
+            eta = elapsed / progress - elapsed if progress > 0 else 0.0
+            print(
+                "[stage2-eval] progress "
+                f"rank0={local_order}/{len(local_indexed)} "
+                f"global_seen~={min(local_order * accelerator.num_processes, len(scenarios))}/{len(scenarios)} "
+                f"elapsed={_format_seconds(elapsed)} "
+                f"eta={_format_seconds(eta)}",
+                flush=True,
+            )
     gathered = accelerator.gather(
         torch.tensor(
             local_totals,
@@ -171,6 +204,15 @@ def evaluate_stage2_checkpoint(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(
+            "[stage2-eval] done "
+            f"split={split} "
+            f"success={report['metrics']['all']['success_rate']:.4f} "
+            f"parse={report['metrics']['all']['parse_rate']:.4f} "
+            f"return={report['metrics']['all']['mean_return']:.4f} "
+            f"output={output_path}",
+            flush=True,
         )
     accelerator.wait_for_everyone()
     return report

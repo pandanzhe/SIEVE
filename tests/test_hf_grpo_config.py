@@ -114,6 +114,26 @@ class HFGRPOConfigTests(unittest.TestCase):
             config = parse_hf_grpo_config(raw, Path(directory))
         self.assertEqual(config.train.eval_scenario_limit, 20)
 
+    def test_config_accepts_gigpo_algorithm(self) -> None:
+        raw = _config()
+        raw["algorithm"] = {
+            "name": "gigpo",
+            "trajectory_advantage_weight": 0.4,
+            "step_advantage_weight": 0.6,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            config = parse_hf_grpo_config(raw, Path(directory))
+        self.assertEqual(config.algorithm.name, "gigpo")
+        self.assertEqual(config.algorithm.trajectory_advantage_weight, 0.4)
+        self.assertEqual(config.algorithm.step_advantage_weight, 0.6)
+
+    def test_config_rejects_unknown_algorithm(self) -> None:
+        raw = _config()
+        raw["algorithm"] = {"name": "tree_grpo"}
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(ValueError):
+                parse_hf_grpo_config(raw, Path(directory))
+
     def test_group_advantages_are_normalized_within_each_group(self) -> None:
         advantages = grouped_advantages(
             np.array([1.0, 2.0, 3.0, 10.0, 10.0]),

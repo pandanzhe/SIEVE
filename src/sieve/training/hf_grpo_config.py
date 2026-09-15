@@ -19,6 +19,14 @@ REQUIRED_CONSTRAINTS = {
 
 
 @dataclass(frozen=True)
+class HFGRPOAlgorithmConfig:
+    name: str
+    trajectory_advantage_weight: float
+    step_advantage_weight: float
+    step_advantage_epsilon: float
+
+
+@dataclass(frozen=True)
 class HFGRPOPaths:
     stage1_dev_file: Path
     readiness_report: Path
@@ -79,6 +87,7 @@ class HFGRPOHardwareConfig:
 @dataclass(frozen=True)
 class HFGRPOConfig:
     seed: int
+    algorithm: HFGRPOAlgorithmConfig
     expected_split_counts: dict[str, int]
     paths: HFGRPOPaths
     model: HFGRPOModelConfig
@@ -118,10 +127,44 @@ def _unit_interval(value: Any, name: str, *, include_one: bool = True) -> float:
     return number
 
 
+def _non_negative_float(raw: Mapping[str, Any], key: str) -> float:
+    value = float(raw.get(key, 0.0))
+    if value < 0.0:
+        raise ValueError(f"{key} must be non-negative")
+    return value
+
+
 def parse_hf_grpo_config(raw: Mapping[str, Any], root: str | Path) -> HFGRPOConfig:
     """Validate the Qwen2.5 Stage-2 configuration without importing GPU libraries."""
     if raw.get("backend") != "hf_constrained_grpo":
         raise ValueError("backend must be 'hf_constrained_grpo'")
+    algorithm_raw = raw.get("algorithm") or {}
+    if not isinstance(algorithm_raw, Mapping):
+        raise ValueError("algorithm must be a mapping when set")
+    algorithm_name = str(algorithm_raw.get("name", "grpo")).lower()
+    if algorithm_name not in {"grpo", "gigpo"}:
+        raise ValueError("algorithm.name must be 'grpo' or 'gigpo'")
+    if algorithm_name == "grpo":
+        default_trajectory_weight = 1.0
+        default_step_weight = 0.0
+    else:
+        default_trajectory_weight = 0.5
+        default_step_weight = 0.5
+    trajectory_advantage_weight = float(
+        algorithm_raw.get("trajectory_advantage_weight", default_trajectory_weight)
+    )
+    step_advantage_weight = float(
+        algorithm_raw.get("step_advantage_weight", default_step_weight)
+    )
+    if trajectory_advantage_weight < 0.0 or step_advantage_weight < 0.0:
+        raise ValueError("algorithm advantage weights must be non-negative")
+    if trajectory_advantage_weight + step_advantage_weight <= 0.0:
+        raise ValueError("at least one algorithm advantage weight must be positive")
+    step_advantage_epsilon = _non_negative_float(
+        algorithm_raw, "step_advantage_epsilon"
+    )
+    if step_advantage_epsilon == 0.0:
+        step_advantage_epsilon = 1e-6
     path_raw = _mapping(raw, "paths")
     model_raw = _mapping(raw, "model")
     rollout_raw = _mapping(raw, "rollout")
@@ -190,6 +233,12 @@ def parse_hf_grpo_config(raw: Mapping[str, Any], root: str | Path) -> HFGRPOConf
 
     return HFGRPOConfig(
         seed=int(raw.get("seed", 42)),
+        algorithm=HFGRPOAlgorithmConfig(
+            name=algorithm_name,
+            trajectory_advantage_weight=trajectory_advantage_weight,
+            step_advantage_weight=step_advantage_weight,
+            step_advantage_epsilon=step_advantage_epsilon,
+        ),
         expected_split_counts=expected_split_counts,
         paths=HFGRPOPaths(
             stage1_dev_file=resolve_repo_path(root, path_raw["stage1_dev_file"]),

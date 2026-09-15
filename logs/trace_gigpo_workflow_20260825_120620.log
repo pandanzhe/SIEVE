@@ -1,0 +1,5 @@
+nohup: ignoring input
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 13.07it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 14.21it/s]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[trace-stage2] done mode=hf scenarios=60 success=0.9000 failures=6 jsonl=outputs/analysis/workflow_failures/gigpo_workflow_trace.jsonl summary=outputs/analysis/workflow_failures/gigpo_workflow_summary.json

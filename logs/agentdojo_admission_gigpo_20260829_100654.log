@@ -1,0 +1,8 @@
+nohup: ignoring input
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  9.24it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00,  9.19it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00,  9.77it/s]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[agentdojo-admission] progress 1/20 elapsed=0m03s eta=1m06s
+[agentdojo-admission] progress 10/20 elapsed=0m34s eta=0m34s
+[agentdojo-admission] progress 20/20 elapsed=1m07s eta=0m00s
+[agentdojo-admission] done model=gigpo pairs=20 parse=0.9000 poison_to_state=0.0000 ignore_injection=0.4500 over_hold=0.0000 output=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/agentdojo/admission_smoke_gigpo.json

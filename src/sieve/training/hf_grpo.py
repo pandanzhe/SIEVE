@@ -6,6 +6,7 @@ import math
 import os
 import random
 import shutil
+import time
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -53,6 +54,7 @@ class HFRolloutExperience:
 class HFRolloutTrajectory:
     experiences: tuple[HFRolloutExperience, ...]
     task_return: float
+    step_rewards: tuple[float, ...]
     costs: dict[str, float]
     valid_actions: int
     action_count: int
@@ -659,6 +661,7 @@ def _collect_expert_trajectory(
     valid_actions = 0
     success = False
     steps: list[dict[str, Any]] = []
+    step_rewards: list[float] = []
 
     policy.eval()
     reference.eval()
@@ -676,6 +679,7 @@ def _collect_expert_trajectory(
         )
         valid_actions += 1
         transition = environment.step(output, invalid_format=False, token_cost=0)
+        step_rewards.append(float(transition.reward))
         total_return += discount * transition.reward
         discount *= config.train.gamma
         for name in total_costs:
@@ -734,6 +738,7 @@ def _collect_expert_trajectory(
     return HFRolloutTrajectory(
         experiences=tuple(experiences),
         task_return=total_return,
+        step_rewards=tuple(step_rewards),
         costs=total_costs,
         valid_actions=valid_actions,
         action_count=action_count,
@@ -764,6 +769,7 @@ def _collect_trajectory(
     valid_actions = 0
     success = False
     steps: list[dict[str, Any]] = []
+    step_rewards: list[float] = []
 
     policy.eval()
     reference.eval()
@@ -806,6 +812,7 @@ def _collect_trajectory(
             invalid_format=not valid,
             token_cost=int(full_ids.numel()) - completion_start,
         )
+        step_rewards.append(float(transition.reward))
         total_return += discount * transition.reward
         discount *= config.train.gamma
         for name in total_costs:
@@ -860,6 +867,7 @@ def _collect_trajectory(
     return HFRolloutTrajectory(
         experiences=tuple(experiences),
         task_return=total_return,
+        step_rewards=tuple(step_rewards),
         costs=total_costs,
         valid_actions=valid_actions,
         action_count=action_count,
@@ -978,6 +986,105 @@ def _pad_training_samples(
     while len(padded) < target_count:
         padded.append(replace(samples[-1], weight=0.0))
     return padded
+
+
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{seconds:02d}s"
+    return f"{minutes}m{seconds:02d}s"
+
+
+def _discounted_reward_to_go(values: Sequence[float], gamma: float) -> list[float]:
+    returns = [0.0 for _ in values]
+    running = 0.0
+    for index in range(len(values) - 1, -1, -1):
+        running = float(values[index]) + gamma * running
+        returns[index] = running
+    return returns
+
+
+def _compute_experience_advantages(
+    trajectories: Sequence[HFRolloutTrajectory],
+    scores: Sequence[float],
+    group_ids: Sequence[int],
+    config: HFGRPOConfig,
+    controller: LagrangeController,
+) -> tuple[np.ndarray, list[list[float]], dict[str, float]]:
+    trajectory_advantages = grouped_advantages(np.asarray(scores), np.asarray(group_ids))
+    per_step_advantages = [
+        [0.0 for _ in trajectory.experiences] for trajectory in trajectories
+    ]
+    local_variances: list[float] = []
+
+    if config.algorithm.step_advantage_weight > 0.0:
+        score_by_trajectory: list[list[float]] = []
+        for trajectory in trajectories:
+            step_scores = [
+                float(step["reward"]) - controller.penalty(step.get("costs", {}))
+                for step in trajectory.steps
+            ]
+            score_by_trajectory.append(
+                _discounted_reward_to_go(step_scores, config.train.gamma)
+            )
+
+        for group_id in sorted(set(group_ids)):
+            members = [
+                index for index, item in enumerate(group_ids) if item == group_id
+            ]
+            max_steps = max(
+                (len(score_by_trajectory[index]) for index in members),
+                default=0,
+            )
+            for step_index in range(max_steps):
+                active = [
+                    index
+                    for index in members
+                    if step_index < len(score_by_trajectory[index])
+                ]
+                if len(active) < 2:
+                    continue
+                values = np.asarray(
+                    [score_by_trajectory[index][step_index] for index in active],
+                    dtype=np.float64,
+                )
+                local_variances.append(float(np.var(values)))
+                normalized = (
+                    values - values.mean()
+                ) / (values.std() + config.algorithm.step_advantage_epsilon)
+                for index, advantage in zip(active, normalized, strict=True):
+                    per_step_advantages[index][step_index] = float(advantage)
+
+    trajectory_weight = config.algorithm.trajectory_advantage_weight
+    step_weight = config.algorithm.step_advantage_weight
+    weight_total = trajectory_weight + step_weight
+    mixed: list[list[float]] = []
+    for trajectory_index, trajectory in enumerate(trajectories):
+        values: list[float] = []
+        for step_index, _experience in enumerate(trajectory.experiences):
+            values.append(
+                (
+                    trajectory_weight * float(trajectory_advantages[trajectory_index])
+                    + step_weight * per_step_advantages[trajectory_index][step_index]
+                )
+                / weight_total
+            )
+        mixed.append(values)
+
+    flat_step_advantages = [
+        abs(value) for values in per_step_advantages for value in values
+    ]
+    stats = {
+        "step_reward_variance": (
+            float(np.mean(local_variances)) if local_variances else 0.0
+        ),
+        "mean_abs_step_advantage": (
+            float(np.mean(flat_step_advantages)) if flat_step_advantages else 0.0
+        ),
+    }
+    return trajectory_advantages, mixed, stats
 
 
 def _aggregate_iteration(
@@ -1324,6 +1431,13 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                     "output_dir": str(output_dir),
                     "run_dir": str(run_dir),
                     "config": {
+                        "algorithm": config.algorithm.name,
+                        "trajectory_advantage_weight": (
+                            config.algorithm.trajectory_advantage_weight
+                        ),
+                        "step_advantage_weight": (
+                            config.algorithm.step_advantage_weight
+                        ),
                         "iterations": config.train.iterations,
                         "group_size": config.rollout.group_size,
                         "groups_per_iteration": config.rollout.groups_per_iteration,
@@ -1389,7 +1503,9 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
     for _ in range(start_iteration * config.rollout.groups_per_iteration):
         randomizer.randrange(len(train_scenarios))
     optimizer.zero_grad(set_to_none=True)
+    training_started_at = time.time()
     for iteration in range(start_iteration, config.train.iterations):
+        iteration_started_at = time.time()
         lr_multiplier = cosine_iteration_multiplier(
             iteration, config.train.iterations, config.train.warmup_ratio
         )
@@ -1440,12 +1556,16 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
             trajectory.task_return - controller.penalty(trajectory.costs)
             for trajectory in trajectories
         ]
-        advantages = grouped_advantages(np.asarray(scores), np.asarray(group_ids))
+        trajectory_advantages, experience_advantages, advantage_stats = (
+            _compute_experience_advantages(
+                trajectories, scores, group_ids, config, controller
+            )
+        )
         for trajectory, metadata, score, advantage in zip(
             trajectories,
             trajectory_metadata,
             scores,
-            advantages,
+            trajectory_advantages,
             strict=True,
         ):
             group_index, sample_index, scenario, rollout_seed = metadata
@@ -1464,9 +1584,13 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                 ),
             )
         samples = [
-            HFTrainingSample(experience, float(advantage))
-            for trajectory, advantage in zip(trajectories, advantages, strict=True)
-            for experience in trajectory.experiences
+            HFTrainingSample(experience, float(step_advantage))
+            for trajectory, trajectory_advantages_for_steps in zip(
+                trajectories, experience_advantages, strict=True
+            )
+            for experience, step_advantage in zip(
+                trajectory.experiences, trajectory_advantages_for_steps, strict=True
+            )
         ]
         maximum_sample_count = _global_max_sample_count(accelerator, len(samples))
         accumulation_block = (
@@ -1569,12 +1693,14 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
         controller.update(aggregate["mean_costs"])
         row: dict[str, Any] = {
             "iteration": iteration + 1,
+            "algorithm": config.algorithm.name,
             "learning_rate": current_learning_rate,
             "policy_loss": float(global_loss_totals[0].item())
             / reported_token_count,
             "sampled_kl": float(global_loss_totals[1].item())
             / reported_token_count,
             **{key: value for key, value in aggregate.items() if key != "mean_costs"},
+            **advantage_stats,
         }
         row.update(
             {f"cost_{key}": value for key, value in aggregate["mean_costs"].items()}
@@ -1611,11 +1737,24 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                 best_dev_score = dev_score
                 _save_adapter(accelerator, policy, tokenizer, output_dir / "best")
         if accelerator.is_main_process:
+            elapsed_seconds = time.time() - training_started_at
+            iteration_seconds = time.time() - iteration_started_at
+            completed_iterations = iteration + 1 - start_iteration
+            average_iteration_seconds = elapsed_seconds / max(
+                completed_iterations, 1
+            )
+            remaining_iterations = config.train.iterations - iteration - 1
+            eta_seconds = average_iteration_seconds * remaining_iterations
+            row["iteration_seconds"] = iteration_seconds
+            row["elapsed_seconds"] = elapsed_seconds
+            row["avg_iteration_seconds"] = average_iteration_seconds
+            row["eta_seconds"] = eta_seconds
             _append_jsonl(metrics_path, row)
             _append_jsonl(run_metrics_path, row)
             _append_csv(run_metrics_csv_path, row)
             print(
                 "[stage2] "
+                f"algo={row['algorithm']} "
                 f"iter={row['iteration']}/{config.train.iterations} "
                 f"lr={row['learning_rate']:.3e} "
                 f"return={row['mean_return']:.4f} "
@@ -1623,10 +1762,15 @@ def train_hf_constrained_grpo(config: HFGRPOConfig) -> dict[str, Any]:
                 f"success={row['success_rate']:.4f} "
                 f"parse={row['parse_rate']:.4f} "
                 f"reward_var={row['group_reward_variance']:.6f} "
+                f"step_var={row['step_reward_variance']:.6f} "
                 f"policy_loss={row['policy_loss']:.6f} "
                 f"kl={row['sampled_kl']:.6f} "
                 f"false_update={row.get('cost_false_update', 0.0):.4f} "
-                f"stall={row.get('cost_stall', 0.0):.4f}",
+                f"stall={row.get('cost_stall', 0.0):.4f} "
+                f"iter_time={_format_seconds(iteration_seconds)} "
+                f"avg_iter={_format_seconds(average_iteration_seconds)} "
+                f"elapsed={_format_seconds(elapsed_seconds)} "
+                f"eta={_format_seconds(eta_seconds)}",
                 flush=True,
             )
 

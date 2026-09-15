@@ -5,9 +5,16 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
+.venv-agentdojo/
 .venv-stage1/
 .conda-env/
+.conda-envs/
+.agentdojo-src/
+.agentdojo-extra/
+.agentdojo-extra*/
+.agentdojo-pydeps/
 .superpowers/
+cache/
 outputs/
 tmp/
 
@@ -45,6 +52,12 @@ data/raw/car-bench/
 
 # Response cache (contains API outputs)
 response_cache.jsonl
+
+# Local API endpoint/key configs
+model_api.json
+*_api.json
+*endpoint*.json
+*api_key*.json
 
 # OS
 .DS_Store

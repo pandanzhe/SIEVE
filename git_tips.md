@@ -140,9 +140,7 @@ git restore 'SIEVE：多步智能体中的观察准入与可靠状态修正.pdf'
 提交信息必须带 TRAE CLI trailer：
 
 ```bash
-git commit -m "Fix SIEVE readiness logging and stage2 data values
-
-Co-authored-by: TRAE CLI <noreply@bytedance.com>"
+git commit -m "Fix SIEVE readiness logging and stage2 data values"
 ```
 
 如果换成其他提交标题，也保留最后这一行：
@@ -156,7 +154,7 @@ Co-authored-by: TRAE CLI <noreply@bytedance.com>
 首次推送新分支：
 
 ```bash
-git push -u origin lijing/sieve-stage1-readiness-rl-fix
+git push -u origin sieve-stage2-RL
 ```
 
 后续同一分支继续推送：

@@ -1,0 +1,23 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/scripts/evaluate_agentdojo_full_sieve.py", line 1030, in <module>
+    main()
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/scripts/evaluate_agentdojo_full_sieve.py", line 833, in main
+    from agentdojo.task_suite.load_suites import get_suite
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/task_suite/__init__.py", line 1, in <module>
+    from agentdojo.base_tasks import BaseInjectionTask, BaseUserTask, TaskDifficulty
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/base_tasks.py", line 6, in <module>
+    from agentdojo.functions_runtime import FunctionCall, TaskEnvironment
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-src/agentdojo/functions_runtime.py", line 8, in <module>
+    from pydantic import BaseModel, Field, ValidationError, create_model
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/pydantic/__init__.py", line 5, in <module>
+    from ._migration import getattr_migration
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/pydantic/_migration.py", line 4, in <module>
+    from pydantic.warnings import PydanticDeprecatedSince20
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/pydantic/warnings.py", line 5, in <module>
+    from .version import version_short
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/pydantic/version.py", line 7, in <module>
+    from pydantic_core import __version__ as __pydantic_core_version__
+  File "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/.agentdojo-extra/pydantic_core/__init__.py", line 8, in <module>
+    from ._pydantic_core import (
+ModuleNotFoundError: No module named 'pydantic_core._pydantic_core'

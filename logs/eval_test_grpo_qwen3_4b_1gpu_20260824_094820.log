@@ -1,0 +1,94 @@
+nohup: ignoring input
+[stage2-eval] using main_process_port=51817
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+[stage2-eval] start split=test scenarios=300 checkpoint=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b-8xh100-grpo/runs/20260823_145210/final/adapter output=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b-8xh100-grpo/runs/20260823_145210/evaluation_test.json
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 12.09it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 13.34it/s]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+[stage2-eval] progress rank0=1/300 global_seen~=1/300 elapsed=0m06s eta=31m59s
+[stage2-eval] progress rank0=10/300 global_seen~=10/300 elapsed=1m06s eta=31m58s
+[stage2-eval] progress rank0=20/300 global_seen~=20/300 elapsed=2m10s eta=30m20s
+[stage2-eval] progress rank0=30/300 global_seen~=30/300 elapsed=3m11s eta=28m46s
+[stage2-eval] progress rank0=40/300 global_seen~=40/300 elapsed=4m18s eta=27m57s
+[stage2-eval] progress rank0=50/300 global_seen~=50/300 elapsed=5m23s eta=26m57s
+[stage2-eval] progress rank0=60/300 global_seen~=60/300 elapsed=6m41s eta=26m45s
+[stage2-eval] progress rank0=70/300 global_seen~=70/300 elapsed=8m01s eta=26m23s
+[stage2-eval] progress rank0=80/300 global_seen~=80/300 elapsed=9m08s eta=25m07s
+[stage2-eval] progress rank0=90/300 global_seen~=90/300 elapsed=10m13s eta=23m52s
+[stage2-eval] progress rank0=100/300 global_seen~=100/300 elapsed=11m32s eta=23m04s
+[stage2-eval] progress rank0=110/300 global_seen~=110/300 elapsed=12m36s eta=21m46s
+[stage2-eval] progress rank0=120/300 global_seen~=120/300 elapsed=13m44s eta=20m36s
+[stage2-eval] progress rank0=130/300 global_seen~=130/300 elapsed=14m49s eta=19m22s
+[stage2-eval] progress rank0=140/300 global_seen~=140/300 elapsed=15m51s eta=18m06s
+[stage2-eval] progress rank0=150/300 global_seen~=150/300 elapsed=16m54s eta=16m54s
+[stage2-eval] progress rank0=160/300 global_seen~=160/300 elapsed=18m01s eta=15m46s
+[stage2-eval] progress rank0=170/300 global_seen~=170/300 elapsed=19m12s eta=14m41s
+[stage2-eval] progress rank0=180/300 global_seen~=180/300 elapsed=20m21s eta=13m34s
+[stage2-eval] progress rank0=190/300 global_seen~=190/300 elapsed=21m40s eta=12m32s
+[stage2-eval] progress rank0=200/300 global_seen~=200/300 elapsed=22m46s eta=11m23s
+[stage2-eval] progress rank0=210/300 global_seen~=210/300 elapsed=23m58s eta=10m16s
+[stage2-eval] progress rank0=220/300 global_seen~=220/300 elapsed=25m04s eta=9m07s
+[stage2-eval] progress rank0=230/300 global_seen~=230/300 elapsed=26m12s eta=7m58s
+[stage2-eval] progress rank0=240/300 global_seen~=240/300 elapsed=27m23s eta=6m50s
+[stage2-eval] progress rank0=250/300 global_seen~=250/300 elapsed=28m29s eta=5m41s
+[stage2-eval] progress rank0=260/300 global_seen~=260/300 elapsed=29m54s eta=4m36s
+[stage2-eval] progress rank0=270/300 global_seen~=270/300 elapsed=31m16s eta=3m28s
+[stage2-eval] progress rank0=280/300 global_seen~=280/300 elapsed=32m39s eta=2m19s
+[stage2-eval] progress rank0=290/300 global_seen~=290/300 elapsed=33m50s eta=1m10s
+[stage2-eval] progress rank0=300/300 global_seen~=300/300 elapsed=34m59s eta=0m00s
+[stage2-eval] done split=test success=0.9767 parse=0.9949 return=2.4466 output=/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b-8xh100-grpo/runs/20260823_145210/evaluation_test.json
+{
+  "split": "test",
+  "checkpoint": "/mnt/bn/fs-llm-train-v2/mlx/users/lijing/SIEVE/outputs/stage2-qwen3-4b-8xh100-grpo/runs/20260823_145210/final/adapter",
+  "checkpoint_sha256": "e10b76406b6aff3b5cea77354863907530cad1398386837708fd84769fd0fb83",
+  "scenario_file_sha256": "70867473daa52f92cc76d4088d8150b2fce049acbe918ec4172b581c051d29f9",
+  "metrics": {
+    "all": {
+      "episodes": 300.0,
+      "success_rate": 0.9766666666666667,
+      "mean_return": 2.446557846459989,
+      "parse_rate": 0.994927536231884,
+      "false_update_rate": 0.0,
+      "invalid_format_rate": 0.005072463768115942,
+      "verification_rate": 0.21739130434782608,
+      "stall_rate": 0.0,
+      "invalid_patch_rate": 0.0
+    },
+    "commerce": {
+      "episodes": 150.0,
+      "success_rate": 1.0,
+      "mean_return": 2.495731294019999,
+      "parse_rate": 1.0,
+      "false_update_rate": 0.0,
+      "invalid_format_rate": 0.0,
+      "verification_rate": 0.21739130434782608,
+      "stall_rate": 0.0,
+      "invalid_patch_rate": 0.0
+    },
+    "service": {
+      "episodes": 90.0,
+      "success_rate": 0.9888888888888889,
+      "mean_return": 2.475601783964446,
+      "parse_rate": 1.0,
+      "false_update_rate": 0.0,
+      "invalid_format_rate": 0.0,
+      "verification_rate": 0.21739130434782608,
+      "stall_rate": 0.0,
+      "invalid_patch_rate": 0.0
+    },
+    "workflow": {
+      "episodes": 60.0,
+      "success_rate": 0.9,
+      "mean_return": 2.2800583213033323,
+      "parse_rate": 0.9746376811594203,
+      "false_update_rate": 0.0,
+      "invalid_format_rate": 0.025362318840579712,
+      "verification_rate": 0.21739130434782608,
+      "stall_rate": 0.0,
+      "invalid_patch_rate": 0.0
+    }
+  }
+}

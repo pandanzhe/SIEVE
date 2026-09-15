@@ -94,3 +94,51 @@ Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This sho
 Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
 [stage2] iter=41/200 lr=4.609e-06 return=1.6560 score=1.6387 success=0.6250 parse=1.0000 reward_var=0.534200 policy_loss=-0.053737 kl=0.031009 false_update=0.0000 stall=0.0625
 [stage2] iter=42/200 lr=4.587e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.023783 false_update=0.0000 stall=0.0000
+[stage2] iter=43/200 lr=4.565e-06 return=0.7834 score=0.5087 success=0.3125 parse=0.8750 reward_var=1.279737 policy_loss=0.259354 kl=0.019274 false_update=0.1250 stall=0.8750
+[stage2] iter=44/200 lr=4.541e-06 return=1.4223 score=1.3795 success=0.4375 parse=1.0000 reward_var=0.600039 policy_loss=0.051969 kl=0.266154 false_update=0.5625 stall=0.0000
+[stage2] iter=45/200 lr=4.518e-06 return=1.8464 score=1.8464 success=0.7500 parse=1.0000 reward_var=0.803743 policy_loss=-0.137586 kl=0.036889 false_update=0.0000 stall=0.0000
+[stage2] iter=46/200 lr=4.494e-06 return=1.3429 score=1.2842 success=0.4375 parse=1.0000 reward_var=1.018319 policy_loss=0.016974 kl=0.016713 false_update=0.0000 stall=0.1875
+[stage2] iter=47/200 lr=4.469e-06 return=2.1382 score=2.0982 success=0.8750 parse=1.0000 reward_var=0.957143 policy_loss=-0.052550 kl=0.038600 false_update=0.0000 stall=0.1250
+[stage2] iter=48/200 lr=4.444e-06 return=2.3743 score=2.3683 success=0.9375 parse=0.9873 reward_var=0.265487 policy_loss=-0.038998 kl=0.049329 false_update=0.0000 stall=0.0000
+[stage2] iter=49/200 lr=4.418e-06 return=2.4931 score=2.4931 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.027252 false_update=0.0000 stall=0.0000
+[stage2] iter=50/200 lr=4.392e-06 return=2.5015 score=2.5015 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.012895 false_update=0.0000 stall=0.0000
+[stage2] iter=51/200 lr=4.365e-06 return=2.3774 score=2.3588 success=0.9375 parse=1.0000 reward_var=0.285322 policy_loss=0.024633 kl=0.016515 false_update=0.0000 stall=0.0625
+[stage2] iter=52/200 lr=4.338e-06 return=2.3753 score=2.3569 success=0.9375 parse=1.0000 reward_var=0.277224 policy_loss=0.036286 kl=0.022832 false_update=0.0000 stall=0.0625
+[stage2] iter=53/200 lr=4.310e-06 return=2.3895 score=2.3833 success=0.9375 parse=1.0000 reward_var=0.226243 policy_loss=0.018890 kl=0.035349 false_update=0.0625 stall=0.0000
+[stage2] iter=54/200 lr=4.282e-06 return=1.7026 score=1.7026 success=0.6250 parse=1.0000 reward_var=0.403237 policy_loss=-0.034263 kl=0.023589 false_update=0.0000 stall=0.0000
+[stage2] iter=55/200 lr=4.253e-06 return=2.4888 score=2.4888 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.024182 false_update=0.0000 stall=0.0000
+[stage2] iter=56/200 lr=4.224e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.026182 false_update=0.0000 stall=0.0000
+[stage2] iter=57/200 lr=4.195e-06 return=2.4597 score=2.4382 success=1.0000 parse=1.0000 reward_var=0.024866 policy_loss=0.048828 kl=0.033389 false_update=0.0000 stall=0.0625
+[stage2] iter=58/200 lr=4.165e-06 return=2.5060 score=2.5060 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.021592 false_update=0.0000 stall=0.0000
+[stage2] iter=59/200 lr=4.134e-06 return=2.3391 score=2.3391 success=0.9375 parse=1.0000 reward_var=0.351638 policy_loss=-0.074837 kl=0.051797 false_update=0.0000 stall=0.0000
+[stage2] dev eval start scenarios=200 limit=all
+[stage2] dev eval progress 10/200
+[stage2] dev eval progress 20/200
+[stage2] dev eval progress 30/200
+[stage2] dev eval progress 40/200
+[stage2] dev eval progress 50/200
+[stage2] dev eval progress 60/200
+[stage2] dev eval progress 70/200
+[stage2] dev eval progress 80/200
+[stage2] dev eval progress 90/200
+[stage2] dev eval progress 100/200
+[stage2] dev eval progress 110/200
+[stage2] dev eval progress 120/200
+[stage2] dev eval progress 130/200
+[stage2] dev eval progress 140/200
+[stage2] dev eval progress 150/200
+[stage2] dev eval progress 160/200
+[stage2] dev eval progress 170/200
+[stage2] dev eval progress 180/200
+[stage2] dev eval progress 190/200
+[stage2] dev eval progress 200/200
+[stage2] dev eval done episodes=200 success=0.8800 parse=0.9913 return=2.2501
+[stage2] iter=60/200 lr=4.104e-06 return=2.4888 score=2.4888 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.019768 false_update=0.0000 stall=0.0000
+Removed shared tensor {'base_model.model.lm_head.weight'} while saving. This should be OK, but check by verifying that you don't receive any warning while reloading
+[stage2] iter=61/200 lr=4.072e-06 return=2.1248 score=2.0811 success=0.8125 parse=1.0000 reward_var=0.577102 policy_loss=0.041977 kl=0.010907 false_update=0.0000 stall=0.1875
+[stage2] iter=62/200 lr=4.041e-06 return=2.2487 score=2.1198 success=0.9375 parse=1.0000 reward_var=0.263318 policy_loss=0.065053 kl=0.041319 false_update=0.0625 stall=0.3750
+[stage2] iter=63/200 lr=4.008e-06 return=2.5060 score=2.5060 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.019712 false_update=0.0000 stall=0.0000
+[stage2] iter=64/200 lr=3.976e-06 return=2.5015 score=2.5015 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.035135 false_update=0.0000 stall=0.0000
+[stage2] iter=65/200 lr=3.943e-06 return=1.9543 score=1.9185 success=0.8125 parse=1.0000 reward_var=1.242998 policy_loss=-0.075008 kl=0.048427 false_update=0.0625 stall=0.1250
+[stage2] iter=66/200 lr=3.910e-06 return=2.4803 score=2.4803 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.026522 false_update=0.0000 stall=0.0000
+[stage2] iter=67/200 lr=3.876e-06 return=2.5149 score=2.5149 success=1.0000 parse=1.0000 reward_var=0.000000 policy_loss=0.000000 kl=0.048098 false_update=0.0000 stall=0.0000
